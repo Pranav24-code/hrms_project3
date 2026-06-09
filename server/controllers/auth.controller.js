@@ -3,20 +3,22 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
 //register user
-export const register = async (req,res,next)=>{
-    try{
-        const{name, email, password,role}= req.body;
-      const existingUser = await User.findOne({ email });
+export const register = async (req, res, next) => {
+  try {
+    const { name, email, password, role } = req.body;
+    const existingUser = await User.findOne({ email });
 
-console.log("Email received:", email);
-console.log("Existing user:", existingUser);
+    console.log("Email received:", email);
+    console.log("Existing user:", existingUser);
 
-        if(existingUser){
-            return res.status(400).json({success: false, message:"User already exists"});
-        }
-        const prefix = role ==="Manager" ? "MGR" : "EMP";
+    if (existingUser) {
+      return res
+        .status(400)
+        .json({ success: false, message: "User already exists" });
+    }
+    const prefix = role === "Manager" ? "MGR" : "EMP";
 
-       const lastUser = await User.findOne({
+    const lastUser = await User.findOne({
       employeeId: { $regex: `^${prefix}` },
     }).sort({ createdAt: -1 });
 
@@ -24,30 +26,34 @@ console.log("Existing user:", existingUser);
 
     if (lastUser) {
       nextNumber =
-        parseInt(lastUser.employeeId.slice(1)) + 1;
+  parseInt(lastUser.employeeId.replace(prefix, "")) + 1;
     }
 
-    const employeeId = `${prefix}${String(nextNumber).padStart(
-      3,
-      "0"
-    )}`;
+    const employeeId = `${prefix}${String(nextNumber).padStart(3, "0")}`;
 
-    const hashedPassword = await bcrypt.hash(password,10);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     const newuser = await User.create({
-        employeeId,
-        name,
-        email,
-        password: hashedPassword,
-        role
-    })
+      employeeId,
+      name,
+      email,
+      password: hashedPassword,
+      role,
+    });
 
-    res.status(201).json({success:true,message:"User registered successfully",newuser});
-  
-}catch(error){
-    res.status(500).json({success:false,message:"Server error",error:error.message});
-}
-}
+    res
+      .status(201)
+      .json({
+        success: true,
+        message: "User registered successfully",
+        newuser,
+      });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
+  }
+};
 
 //login user
 export const login = async (req, res) => {
@@ -70,10 +76,7 @@ export const login = async (req, res) => {
       });
     }
 
-    const isMatch = await bcrypt.compare(
-      password,
-      user.password
-    );
+    const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
       return res.status(400).json({
@@ -91,7 +94,7 @@ export const login = async (req, res) => {
       process.env.JWT_SECRET,
       {
         expiresIn: "1h",
-      }
+      },
     );
 
     res.cookie("token", token, {
@@ -113,9 +116,31 @@ export const login = async (req, res) => {
         role: user.role,
       },
     });
-
   } catch (error) {
     return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const getProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select("-password");
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      user,
+    });
+  } catch (error) {
+    res.status(500).json({
       success: false,
       message: error.message,
     });
