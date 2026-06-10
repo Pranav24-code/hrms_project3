@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
+import { useSelector } from "react-redux";
 
 const statCards = [
   { title: 'Total Employees', value: '73', change: 4.3, icon: Users, color: 'blue', bg: 'bg-blue-500/10', iconColor: 'text-blue-500' },
@@ -60,9 +61,9 @@ const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?:
 };
 
 export default function DashboardPage() {
-  const { user } = useAuth();
+  const user = useSelector((state: any) => state.auth.user);
   const navigate = useNavigate();
-  const isHR = user?.role === 'hr_manager';
+  const isHR = user?.role === 'Manager';
   const pendingLeaves = mockLeaveRequests.filter(l => l.status === 'pending');
 
   return (
