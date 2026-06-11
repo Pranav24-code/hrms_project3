@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState,useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Plus, Filter, Download, MoreHorizontal, Eye, Edit, Trash2, UserCheck, UserX } from 'lucide-react';
 import { mockEmployees } from '@/constants/mockData';
@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import api from "@/utils/api";
 
 const statusConfig = {
   active: { label: 'Active', className: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20' },
@@ -28,17 +29,46 @@ export default function EmployeeListPage() {
   const [page, setPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const perPage = 8;
+  const [employees, setEmployees] = useState<any[]>([]);
+const [loading, setLoading] = useState(true);
 
-  const filtered = mockEmployees.filter(e => {
-    const matchSearch = `${e.firstName} ${e.lastName} ${e.email} ${e.employeeId}`.toLowerCase().includes(search.toLowerCase());
-    const matchDept = deptFilter === 'all' || e.department === deptFilter;
-    const matchStatus = statusFilter === 'all' || e.status === statusFilter;
-    return matchSearch && matchDept && matchStatus;
-  });
+useEffect(() => {
+  fetchEmployees();
+}, []);
+
+const fetchEmployees = async () => {
+  try {
+    const res = await api.get("/employee/get-emp");
+
+    setEmployees(res.data.employees);
+  } catch (err) {
+    console.log(err);
+    toast.error("Failed to load employees");
+  } finally {
+    setLoading(false);
+  }
+};
+
+const filtered = employees.filter((e) => {
+  const matchSearch =
+    `${e.firstName} ${e.lastName} ${e.user?.email} ${e.employeeId}`
+      .toLowerCase()
+      .includes(search.toLowerCase());
+
+  const matchDept =
+    deptFilter === "all" || e.department === deptFilter;
+
+  const matchStatus =
+    statusFilter === "all" ||
+    (statusFilter === "active" && e.user?.isActive) ||
+    (statusFilter === "inactive" && !e.user?.isActive);
+
+  return matchSearch && matchDept && matchStatus;
+});
 
   const paginated = filtered.slice((page - 1) * perPage, page * perPage);
   const totalPages = Math.ceil(filtered.length / perPage);
-  const depts = [...new Set(mockEmployees.map(e => e.department))];
+  const depts = [...new Set(employees.map((e) => e.department))];
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -67,7 +97,7 @@ export default function EmployeeListPage() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-xl font-bold text-foreground" style={{ fontFamily: 'Sora, sans-serif' }}>Employees</h1>
-          <p className="text-sm text-muted-foreground">{mockEmployees.length} total employees across {depts.length} departments</p>
+          <p className="text-sm text-muted-foreground">{employees.length} total employees across {depts.length} departments</p>
         </div>
         <div className="flex gap-2">
           {selectedIds.length > 0 && (
@@ -137,11 +167,11 @@ export default function EmployeeListPage() {
               {paginated.length === 0 ? (
                 <tr><td colSpan={7} className="px-4 py-12 text-center text-muted-foreground text-sm">No employees found.</td></tr>
               ) : paginated.map((emp) => (
-                <tr key={emp.id} className="hover:bg-muted/30 transition-colors group">
+                <tr key={emp._id} className="hover:bg-muted/30 transition-colors group">
                   <td className="px-4 py-3">
                     <Checkbox 
-                      checked={selectedIds.includes(emp.id)} 
-                      onCheckedChange={(c) => handleSelectOne(emp.id, c as boolean)} 
+                      checked={selectedIds.includes(emp._id)} 
+                      onCheckedChange={(c) => handleSelectOne(emp._id, c as boolean)} 
                     />
                   </td>
                   <td className="px-4 py-3">
@@ -161,9 +191,17 @@ export default function EmployeeListPage() {
                   <td className="px-4 py-3 hidden lg:table-cell text-sm text-muted-foreground">{emp.designation}</td>
                   <td className="px-4 py-3 hidden xl:table-cell text-sm text-muted-foreground">{new Date(emp.joiningDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</td>
                   <td className="px-4 py-3">
-                    <Badge variant="outline" className={cn("text-[10px] font-medium capitalize", statusConfig[emp.status].className)}>
-                      {statusConfig[emp.status].label}
-                    </Badge>
+                   <Badge
+  variant="outline"
+  className={cn(
+    "text-[10px] font-medium capitalize",
+    emp.user?.isActive
+      ? statusConfig.active.className
+      : statusConfig.inactive.className
+  )}
+>
+  {emp.user?.isActive ? "Active" : "Inactive"}
+</Badge>
                   </td>
                   <td className="px-4 py-3 text-right">
                     <DropdownMenu>

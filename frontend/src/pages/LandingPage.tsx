@@ -2,11 +2,13 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Briefcase, ArrowRight, Shield, Zap, Users, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/hooks/useAuth';
+import { useSelector } from "react-redux";
+
+
 
 export default function LandingPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const user = useSelector((state: any) => state.auth.user);
 
   useEffect(() => {
     if (user) navigate('/dashboard');
