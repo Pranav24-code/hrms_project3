@@ -95,6 +95,11 @@ export default function LoginPage() {
               {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Signing in...</> : 'Sign In'}
             </Button>
           </form>
+
+          <p className="text-center text-sm text-muted-foreground mt-5">
+            Don't have an account?{' '}
+            <Link to="/signup" className="text-primary hover:underline font-medium">Sign up</Link>
+          </p>
         </div>
 
         <p className="text-center text-xs text-muted-foreground mt-6">

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Briefcase, ArrowLeft, Loader2, Mail, CheckCircle2 } from 'lucide-react';
+import { Briefcase, ArrowLeft, Loader2, Mail, CheckCircle2, AlertCircle } from 'lucide-react';
+import { api, getApiErrorMessage } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,13 +10,20 @@ export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     setLoading(true);
-    await new Promise(r => setTimeout(r, 1200));
-    setLoading(false);
-    setSent(true);
+    try {
+      await api.post('/auth/forgot-password', { email });
+      setSent(true);
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Could not send reset link. Please try again.'));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -45,6 +53,11 @@ export default function ForgotPasswordPage() {
                 <h1 className="text-xl font-bold mb-1" style={{ fontFamily: 'Sora, sans-serif' }}>Forgot password?</h1>
                 <p className="text-sm text-muted-foreground">Enter your email and we'll send you a reset link.</p>
               </div>
+              {error && (
+                <div className="flex items-center gap-2 text-destructive text-sm bg-destructive/10 border border-destructive/20 rounded-lg p-3 mb-5">
+                  <AlertCircle className="w-4 h-4 shrink-0" />{error}
+                </div>
+              )}
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="email">Email Address</Label>

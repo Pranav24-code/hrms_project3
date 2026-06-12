@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Briefcase, Eye, EyeOff, Loader2, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Briefcase, Eye, EyeOff, Loader2, CheckCircle2, ArrowLeft, AlertCircle } from 'lucide-react';
+import { api, getApiErrorMessage } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Progress } from '@/components/ui/progress';
 
 function getStrength(p: string) {
   let score = 0;
@@ -17,11 +17,14 @@ function getStrength(p: string) {
 
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get('token') || '';
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
+  const [error, setError] = useState('');
   const strength = getStrength(password);
   const strengthLabel = strength <= 25 ? 'Weak' : strength <= 50 ? 'Fair' : strength <= 75 ? 'Good' : 'Strong';
   const strengthColor = strength <= 25 ? 'bg-destructive' : strength <= 50 ? 'bg-amber-500' : strength <= 75 ? 'bg-yellow-400' : 'bg-green-500';
@@ -29,11 +32,18 @@ export default function ResetPasswordPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== confirm) return;
+    if (!token) { setError('Invalid or missing reset token. Please request a new link.'); return; }
+    setError('');
     setLoading(true);
-    await new Promise(r => setTimeout(r, 1200));
-    setLoading(false);
-    setDone(true);
-    setTimeout(() => navigate('/login'), 2000);
+    try {
+      await api.post('/auth/reset-password', { token, password });
+      setDone(true);
+      setTimeout(() => navigate('/login'), 2000);
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Could not reset password. The link may have expired.'));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -60,6 +70,11 @@ export default function ResetPasswordPage() {
                 <h1 className="text-xl font-bold mb-1" style={{ fontFamily: 'Sora, sans-serif' }}>Reset password</h1>
                 <p className="text-sm text-muted-foreground">Create a new secure password for your account.</p>
               </div>
+              {error && (
+                <div className="flex items-center gap-2 text-destructive text-sm bg-destructive/10 border border-destructive/20 rounded-lg p-3 mb-5">
+                  <AlertCircle className="w-4 h-4 shrink-0" />{error}
+                </div>
+              )}
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-1.5">
                   <Label>New Password</Label>
