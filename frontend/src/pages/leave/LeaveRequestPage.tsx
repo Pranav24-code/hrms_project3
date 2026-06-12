@@ -6,7 +6,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { useAuth } from '@/hooks/useAuth';
+import { useSelector } from "react-redux";
+import api from "@/utils/api";
+
 
 const leaveTypes = [
   { value: 'annual', label: 'Annual Leave', balance: 12 },
@@ -18,10 +20,10 @@ const leaveTypes = [
 ];
 
 export default function LeaveRequestPage() {
-  const { user } = useAuth();
   const [form, setForm] = useState({ leaveType: '', startDate: '', endDate: '', reason: '' });
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const user = useSelector((state: any) => state.auth.user);
 
   const set = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
 
@@ -31,18 +33,40 @@ export default function LeaveRequestPage() {
     return Math.max(0, Math.ceil((d2.getTime() - d1.getTime()) / 86400000) + 1);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.leaveType || !form.startDate || !form.endDate || !form.reason) {
-      toast.error('Please fill all required fields.');
-      return;
-    }
+ const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  if (
+    !form.leaveType ||
+    !form.startDate ||
+    !form.endDate ||
+    !form.reason
+  ) {
+    toast.error("Please fill all required fields.");
+    return;
+  }
+
+  try {
     setLoading(true);
-    await new Promise(r => setTimeout(r, 1200));
-    setLoading(false);
+
+    await api.post("/leave/apply", {
+      employee: user.id, // Redux user id
+      leaveType: form.leaveType,
+      startDate: form.startDate,
+      endDate: form.endDate,
+      reason: form.reason,
+    });
+
     setSubmitted(true);
-    toast.success('Leave request submitted successfully!');
-  };
+    toast.success("Leave request submitted successfully!");
+  } catch (err: any) {
+    toast.error(
+      err.response?.data?.message || "Failed to submit leave request"
+    );
+  } finally {
+    setLoading(false);
+  }
+};
 
   if (submitted) {
     return (

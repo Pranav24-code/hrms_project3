@@ -68,11 +68,11 @@ const App = () => (
               <Route path="employees/:id" element={<RoleRoute allowedRoles={['Manager']}><EmployeeDetailsPage /></RoleRoute>} />
               <Route path="departments" element={<RoleRoute allowedRoles={['Manager']}><DepartmentListPage /></RoleRoute>} />
               <Route path="departments/:id" element={<RoleRoute allowedRoles={['Manager']}><DepartmentDetailsPage /></RoleRoute>} />
-              <Route path="leave/request" element={<RoleRoute allowedRoles={['employee']}><LeaveRequestPage /></RoleRoute>} />
-              <Route path="leave/history" element={<RoleRoute allowedRoles={['employee']}><LeaveHistoryPage /></RoleRoute>} />
+              <Route path="leave/request" element={<RoleRoute allowedRoles={['Employee']}><LeaveRequestPage /></RoleRoute>} />
+              <Route path="leave/history" element={<RoleRoute allowedRoles={['Employee']}><LeaveHistoryPage /></RoleRoute>} />
               <Route path="leave/approvals" element={<RoleRoute allowedRoles={['Manager']}><LeaveApprovalPage /></RoleRoute>} />
               <Route path="payroll" element={<RoleRoute allowedRoles={['Manager']}><PayrollDashboardPage /></RoleRoute>} />
-              <Route path="payroll/payslip/:id" element={<RoleRoute allowedRoles={['employee', 'Manager']}><PayslipViewerPage /></RoleRoute>} />
+              <Route path="payroll/payslip/:id" element={<RoleRoute allowedRoles={['Employee', 'Manager']}><PayslipViewerPage /></RoleRoute>} />
               <Route path="attendance" element={<AttendancePage />} />
               <Route path="reports" element={<RoleRoute allowedRoles={['Manager']}><ReportsPage /></RoleRoute>} />
               <Route path="notifications" element={<NotificationsPage />} />
