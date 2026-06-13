@@ -20,7 +20,7 @@ export default function LandingPage() {
       <nav className="border-b border-border bg-card/50 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-lg">
+            <div className="w-9 h-9 rounded-sm border-1.5 border-border bg-primary flex items-center justify-center shadow-[2px_2px_0px_0px_var(--border)]">
               <Briefcase className="w-5 h-5 text-primary-foreground" />
             </div>
             <span className="text-xl font-bold tracking-tight text-foreground" style={{ fontFamily: 'Sora, sans-serif' }}>NexaHR</span>
@@ -29,7 +29,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-4">
             <button className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors hidden sm:block">Features</button>
             <button className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors hidden sm:block">Pricing</button>
-            <Button variant="default" size="sm" onClick={() => navigate('/login')} className="h-9 px-5 font-semibold shadow-md">
+            <Button variant="default" size="sm" onClick={() => navigate('/login')} className="h-9 px-5 font-semibold">
               Login
             </Button>
           </div>
@@ -58,7 +58,7 @@ export default function LandingPage() {
               leaves, and employee management all in one secure, high-performance dashboard.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-              <Button size="lg" onClick={() => navigate('/login')} className="h-12 px-8 text-base font-bold shadow-lg shadow-primary/20 group">
+              <Button size="lg" onClick={() => navigate('/login')} className="h-12 px-8 text-base font-bold group">
                 Get Started Now <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Button>
               <Button size="lg" variant="outline" className="h-12 px-8 text-base font-semibold">
@@ -78,8 +78,8 @@ export default function LandingPage() {
                 { title: 'Leave Tracking', desc: 'Advanced approval workflows with real-time balance management.', icon: Shield },
                 { title: 'Enterprise Security', desc: 'Role-based access control with secure data encryption at every level.', icon: Zap }
               ].map((f, i) => (
-                <div key={i} className="bg-card border border-border p-6 rounded-2xl shadow-sm hover:shadow-md transition-all hover:-translate-y-1">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
+                <div key={i} className="neo-card p-6">
+                  <div className="w-10 h-10 rounded-sm border-1.5 border-border bg-primary/10 flex items-center justify-center mb-4">
                     <f.icon className="w-5 h-5 text-primary" />
                   </div>
                   <h3 className="text-base font-bold text-foreground mb-2" style={{ fontFamily: 'Sora, sans-serif' }}>{f.title}</h3>
