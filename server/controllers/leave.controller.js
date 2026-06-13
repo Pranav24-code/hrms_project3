@@ -86,7 +86,11 @@ export const getMyLeaves = async (req, res) => {
 
 export const updateLeaveStatus = async (req, res) => {
   try {
-    const { status, managerRemark, approvedBy } = req.body;
+    const {
+      status,
+      managerRemark,
+      approvedBy,
+    } = req.body;
 
     const leave = await Leave.findByIdAndUpdate(
       req.params.id,
@@ -95,7 +99,9 @@ export const updateLeaveStatus = async (req, res) => {
         managerRemark,
         approvedBy,
       },
-      { new: true }
+      {
+        new: true,
+      }
     );
 
     if (!leave) {
@@ -107,7 +113,7 @@ export const updateLeaveStatus = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: `Leave ${status}`,
+      message: `Leave ${status} successfully`,
       leave,
     });
   } catch (err) {

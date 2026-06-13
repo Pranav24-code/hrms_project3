@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState,useEffect } from 'react';
 import { Check, X, Eye, Clock, Users, CheckCheck } from 'lucide-react';
 import { mockLeaveRequests } from '@/constants/mockData';
 import type { LeaveRequest, LeaveStatus } from '@/types';
@@ -11,22 +11,44 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import api from "@/utils/api";
+import { useSelector } from "react-redux";
+
 
 export default function LeaveApprovalPage() {
-  const [leaves, setLeaves] = useState(mockLeaveRequests);
+  const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
   const [selected, setSelected] = useState<LeaveRequest | null>(null);
   const [comments, setComments] = useState('');
   const [action, setAction] = useState<'approve' | 'reject' | null>(null);
+  const user = useSelector((state: any) => state.auth.user);
+const pending = leaves.filter(l => l.status === "Pending");
+const approved = leaves.filter(l => l.status === "Approved");
+const rejected = leaves.filter(l => l.status === "Rejected");
+  
 
-  const pending = leaves.filter(l => l.status === 'pending');
-  const approved = leaves.filter(l => l.status === 'approved');
-  const rejected = leaves.filter(l => l.status === 'rejected');
+ const handleAction = async (
+  id: string,
+  status: "approved" | "rejected"
+) => {
+  try {
+    await api.put(`/leave/status/${id}`, {
+      status,
+      managerRemark: comments,
+      approvedBy: user._id, 
+    });
 
-  const handleAction = (id: string, status: LeaveStatus) => {
-    setLeaves(prev => prev.map(l => l.id === id ? { ...l, status, approvalComments: comments, approvedBy: 'Robert Taylor' } : l));
-    toast.success(`Leave request ${status} successfully`);
-    setSelected(null); setComments(''); setAction(null);
-  };
+    toast.success(`Leave ${status} successfully`);
+
+    fetchLeaves();
+
+    setSelected(null);
+    setComments("");
+    setAction(null);
+  } catch (err) {
+    toast.error("Something went wrong");
+  }
+};
+  
 
   const leaveBadge = (status: LeaveStatus) => cn("text-[10px] capitalize",
     status === 'approved' ? 'bg-green-500/10 text-green-600 border-green-500/20' :
@@ -38,16 +60,17 @@ export default function LeaveApprovalPage() {
       <div className="flex items-start gap-3">
         <Avatar className="h-9 w-9 shrink-0">
           <AvatarFallback className="text-xs bg-primary/10 text-primary font-bold">
-            {l.employeeName.split(' ').map(n => n[0]).join('')}
+            {`${l.employee?.firstName?.[0] ?? ""}${l.employee?.lastName?.[0] ?? ""}`}
           </AvatarFallback>
         </Avatar>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-sm font-semibold">{l.employeeName}</span>
+            <span className="text-sm font-semibold">    {l.employee?.name}</span>
             <Badge variant="outline" className={leaveBadge(l.status)}>{l.status}</Badge>
           </div>
           <p className="text-xs text-muted-foreground">{l.department} · <span className="capitalize">{l.leaveType} Leave</span></p>
-          <p className="text-xs text-muted-foreground mt-0.5">{l.startDate} → {l.endDate} · <strong>{l.days} days</strong></p>
+          <p className="text-xs text-muted-foreground mt-0.5">{new Date(l.startDate).toLocaleDateString()} →
+{new Date(l.endDate).toLocaleDateString()} · <strong>{l.totalDays} days</strong></p>
           <p className="text-xs italic text-muted-foreground mt-1.5 bg-muted/50 rounded px-2 py-1">"{l.reason}"</p>
         </div>
         <div className="flex flex-col items-end gap-2 shrink-0">
@@ -64,13 +87,32 @@ export default function LeaveApprovalPage() {
               </Button>
             </div>
           )}
-          {l.approvalComments && (
-            <p className="text-[10px] text-primary max-w-[150px] text-right italic">"{l.approvalComments}"</p>
-          )}
+          {l.managerRemark && (
+  <p className="text-[10px] text-primary max-w-[150px] text-right italic">
+    "{l.managerRemark}"
+  </p>
+)}
         </div>
       </div>
     </div>
   );
+
+
+  useEffect(() => {
+  fetchLeaves();
+}, []);
+
+const fetchLeaves = async () => {
+  try {
+    const res = await api.get("/leave/all");
+    console.log(res.data);
+
+    setLeaves(res.data.leaves);
+  } catch (err) {
+    console.log(err);
+  }
+};
+
 
   return (
     <div className="space-y-5">
@@ -110,13 +152,13 @@ export default function LeaveApprovalPage() {
         </TabsList>
         <TabsContent value="pending" className="mt-4 space-y-3">
           {pending.length === 0 ? <p className="text-center py-10 text-muted-foreground text-sm">All caught up!</p>
-            : pending.map(l => <LeaveCard key={l.id} l={l} />)}
+            : pending.map(l => <LeaveCard key={l._id} l={l} />)}
         </TabsContent>
         <TabsContent value="approved" className="mt-4 space-y-3">
-          {approved.map(l => <LeaveCard key={l.id} l={l} />)}
+          {approved.map(l => <LeaveCard key={l._id} l={l} />)}
         </TabsContent>
         <TabsContent value="rejected" className="mt-4 space-y-3">
-          {rejected.map(l => <LeaveCard key={l.id} l={l} />)}
+          {rejected.map(l => <LeaveCard key={l._id} l={l} />)}
         </TabsContent>
       </Tabs>
 
@@ -131,8 +173,10 @@ export default function LeaveApprovalPage() {
           {selected && (
             <div className="space-y-4">
               <div className="bg-muted/50 rounded-lg p-3 text-sm space-y-1">
-                <p className="font-semibold">{selected.employeeName}</p>
-                <p className="text-muted-foreground capitalize">{selected.leaveType} Leave · {selected.days} days</p>
+                <p className="font-semibold">
+  {selected.employee?.firstName} {selected.employee?.lastName}
+</p>
+                <p className="text-muted-foreground capitalize">{selected.leaveType} Leave · {selected.totalDays}  days</p>
                 <p className="text-muted-foreground">{selected.startDate} → {selected.endDate}</p>
               </div>
               <div className="space-y-1.5">
@@ -144,7 +188,7 @@ export default function LeaveApprovalPage() {
           <DialogFooter>
             <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => { setSelected(null); setAction(null); }}>Cancel</Button>
             <Button size="sm" className={cn("h-8 text-xs", action === 'reject' ? "bg-destructive hover:bg-destructive/90" : "")}
-              onClick={() => selected && handleAction(selected.id, action === 'approve' ? 'approved' : 'rejected')}>
+              onClick={() => selected && handleAction(selected._id, action === 'approve' ? 'approved' : 'rejected')}>
               {action === 'approve' ? 'Confirm Approve' : 'Confirm Reject'}
             </Button>
           </DialogFooter>
