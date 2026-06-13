@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap");
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -6,122 +6,109 @@
 
 /*
 ==========================================================================
-【AI HANDOVER NOTE】
+【PREMIUM ENTERPRISE SAAS THEME】
 1. DESIGN PHILOSOPHY:
-   - Primary Design Approach: Enterprise Neo-minimalism with Physicality
-   - Visual Style: Premium SaaS aesthetic combining Swiss typography precision with subtle Glassmorphism 2.0 effects for depth hierarchy
-   - Bento-inspired modular surfaces with clear information architecture, ensuring enterprise-grade professionalism
-   - Rim-light accents on interactive elements to create tactile affordance without overwhelming the interface
-   - This style aligns with modern HRMS platforms (Workday, BambooHR, Rippling) while maintaining unique brand identity through controlled use of the primary blue (#1a56db)
+   - Primary Design Approach: High-End Corporate & Trustworthy Enterprise SaaS
+   - Visual Style: Clean modern interfaces with subtle physical depth, soft diffuse shadows, and professional geometry
+   - Fully responsive grid layouts, clean thin borders, and premium pastel tags
+   - Replaces the raw neo-brutalist style with a highly polished corporate standard suited for enterprise HR departments
 
 2. TYPOGRAPHY:
-   - Sora (Display/Logo): Selected for its geometric precision and modern tech-forward personality. Weight 700-800 provides strong brand presence in headers and the NexaHR logo, conveying authority and innovation
-   - DM Sans (Body/UI): Chosen for exceptional readability at all sizes with humanist warmth. Weights 400-500 ensure comfortable extended reading in data-heavy dashboards while maintaining professional clarity
-   - JetBrains Mono (IDs/Data): Purpose-built for displaying employee IDs, payroll figures, and tabular data. Monospaced alignment creates visual rhythm in tables and ensures numerical data scans effortlessly
+   - Outfit (Display): Friendly geometric display sans-serif for headers, titles, and metrics
+   - Plus Jakarta Sans (Sans): Ultra-readable geometric sans-serif for general UI and body copy
+   - JetBrains Mono (Mono): Monospace font for IDs, currency, and numerical tables
 
 3. COLOR SYSTEM:
-   - Brand Primary (#1a56db): Deep professional blue (Hue ~220°) chosen for trust, stability, and corporate authority. Maps to --primary for CTAs, --accent for interactive states, and --ring for focus indicators
-   - The primary blue's saturation is calibrated to feel premium without being aggressive, suitable for enterprise environments where users spend 8+ hours daily
-   - Semantic Colors: Success (#16a34a) uses green Hue ~145° for leave approvals and positive metrics; Warning (#d97706) uses amber Hue ~30° for pending states; Destructive (#dc2626) uses red Hue ~0° for critical actions
-   - Surface Strategy: Light mode uses warm near-white (oklch 0.98) to reduce eye strain; Dark mode uses cool slate-900 equivalent (oklch 0.15) with slightly elevated chroma for depth
-   - Chart Colors: Five distinct hues (blue, emerald, violet, amber, rose) with consistent lightness/chroma for data visualization accessibility
-
-4. USAGE GUIDE:
-   - Layout Type: Dashboard full-width with collapsible sidebar (240px expanded, 64px collapsed). Main content area uses max-width constraints (1400px) for optimal reading line length in forms
-   - Glassmorphism Application: Use backdrop-blur-md (12px) on modals, popovers, and floating action buttons. Always ensure background opacity ≥ 0.8 for WCAG compliance
-   - Rim-light Effects: Apply subtle top/left border highlights (1px, 10% opacity white in dark mode) on cards and interactive surfaces to simulate ambient lighting
-   - Stat Cards: Use trend indicators with micro-animations (scale on hover). Percentage changes should use semantic colors (green up, red down)
-   - Data Tables: Zebra striping with muted backgrounds, sticky headers, and hover states with elevated shadows
-   - Interactive States: All buttons/links must have distinct hover (scale 1.02), active (scale 0.98), and focus (ring-2) states
-   - Spacing System: Use 4px base unit (0.25rem). Component padding follows 8px/12px/16px/24px rhythm
-   - Dark Mode Considerations: Increase card borders from 1px to 1.5px, use slightly higher chroma in accent colors, reduce pure white text to oklch 0.92 to prevent eye strain
+   - Light Mode: Cool Ice Slate (#F8FAFC), white surfaces, thin subtle Slate borders (#E2E8F0), with Deep Sapphire Blue (#1E40AF) primary accents and Sage Green highlights
+   - Dark Mode: Obsidian Navy (#0A0E1A), Slate Black surfaces (#111827), Slate borders (#1F2937), with Electric Blue (#3B82F6) primary accents
 ==========================================================================
 */
 
 :root {
   /* Typography */
-  --font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-serif: 'Outfit', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
   
   /* Radius */
-  --radius: 0.75rem;
+  --radius: 0.625rem;
 
   /* Core UI Tokens */
-  --background: oklch(0.98 0.005 240);
-  --foreground: oklch(0.15 0.02 240);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.15 0.02 240);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.15 0.02 240);
-  --primary: oklch(0.45 0.18 240);
-  --primary-foreground: oklch(0.98 0.005 240);
-  --secondary: oklch(0.94 0.01 240);
-  --secondary-foreground: oklch(0.2 0.02 240);
-  --muted: oklch(0.96 0.008 240);
-  --muted-foreground: oklch(0.48 0.015 240);
-  --accent: oklch(0.92 0.015 240);
-  --accent-foreground: oklch(0.2 0.02 240);
-  --destructive: oklch(0.55 0.22 15);
-  --destructive-foreground: oklch(0.98 0.005 15);
-  --border: oklch(0.88 0.01 240);
-  --input: oklch(0.88 0.01 240);
-  --ring: oklch(0.45 0.18 240);
+  --background: #F8FAFC; /* Cool Ice Slate */
+  --foreground: #0F172A; /* Slate 900 */
+  --card: #FFFFFF;
+  --card-foreground: #0F172A;
+  --popover: #FFFFFF;
+  --popover-foreground: #0F172A;
+  --primary: #1E40AF; /* Trustworthy Sapphire Blue */
+  --primary-foreground: #FFFFFF;
+  --secondary: #F1F5F9; /* Slate 100 */
+  --secondary-foreground: #0F172A;
+  --muted: #F8FAFC;
+  --muted-foreground: #64748B; /* Slate 500 */
+  --accent: #E2E8F0;
+  --accent-foreground: #0F172A;
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+  --border: #E2E8F0; /* Soft Slate border */
+  --input: #E2E8F0;
+  --ring: #1E40AF;
   
   /* Chart Tokens */
-  --chart-1: oklch(0.55 0.18 240);
-  --chart-2: oklch(0.58 0.16 160);
-  --chart-3: oklch(0.62 0.19 280);
-  --chart-4: oklch(0.65 0.18 45);
-  --chart-5: oklch(0.6 0.2 350);
+  --chart-1: #2563EB; /* Blue */
+  --chart-2: #0D9488; /* Teal */
+  --chart-3: #6366F1; /* Indigo */
+  --chart-4: #F59E0B; /* Amber */
+  --chart-5: #EC4899; /* Pink */
   
   /* Sidebar Tokens */
-  --sidebar: oklch(1 0 0);
-  --sidebar-foreground: oklch(0.2 0.02 240);
-  --sidebar-primary: oklch(0.45 0.18 240);
-  --sidebar-primary-foreground: oklch(0.98 0.005 240);
-  --sidebar-accent: oklch(0.92 0.015 240);
-  --sidebar-accent-foreground: oklch(0.2 0.02 240);
-  --sidebar-border: oklch(0.88 0.01 240);
-  --sidebar-ring: oklch(0.45 0.18 240);
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #1E293B;
+  --sidebar-primary: #1E40AF;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #F1F5F9;
+  --sidebar-accent-foreground: #0F172A;
+  --sidebar-border: #F1F5F9;
+  --sidebar-ring: #1E40AF;
 }
 
 .dark {
-  --background: oklch(0.15 0.015 240);
-  --foreground: oklch(0.92 0.01 240);
-  --card: oklch(0.18 0.018 240);
-  --card-foreground: oklch(0.92 0.01 240);
-  --popover: oklch(0.18 0.018 240);
-  --popover-foreground: oklch(0.92 0.01 240);
-  --primary: oklch(0.58 0.22 240);
-  --primary-foreground: oklch(0.98 0.005 240);
-  --secondary: oklch(0.25 0.02 240);
-  --secondary-foreground: oklch(0.88 0.01 240);
-  --muted: oklch(0.22 0.018 240);
-  --muted-foreground: oklch(0.58 0.015 240);
-  --accent: oklch(0.28 0.025 240);
-  --accent-foreground: oklch(0.88 0.01 240);
-  --destructive: oklch(0.58 0.24 15);
-  --destructive-foreground: oklch(0.98 0.005 15);
-  --border: oklch(0.28 0.02 240);
-  --input: oklch(0.28 0.02 240);
-  --ring: oklch(0.58 0.22 240);
+  --background: #0A0E1A; /* Obsidian Navy */
+  --foreground: #F8FAFC;
+  --card: #111827; /* Slate Black */
+  --card-foreground: #F8FAFC;
+  --popover: #111827;
+  --popover-foreground: #F8FAFC;
+  --primary: #3B82F6; /* Electric Blue */
+  --primary-foreground: #0A0E1A;
+  --secondary: #1F2937;
+  --secondary-foreground: #F8FAFC;
+  --muted: #1F2937;
+  --muted-foreground: #94A3B8;
+  --accent: #374151;
+  --accent-foreground: #F8FAFC;
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+  --border: #1F2937; /* Zinc 800 */
+  --input: #1F2937;
+  --ring: #3B82F6;
   
   /* Chart Tokens */
-  --chart-1: oklch(0.62 0.22 240);
-  --chart-2: oklch(0.65 0.2 155);
-  --chart-3: oklch(0.68 0.23 280);
-  --chart-4: oklch(0.7 0.22 45);
-  --chart-5: oklch(0.66 0.24 350);
+  --chart-1: #3B82F6;
+  --chart-2: #10B981;
+  --chart-3: #6366F1;
+  --chart-4: #F59E0B;
+  --chart-5: #EC4899;
   
   /* Sidebar Tokens */
-  --sidebar: oklch(0.17 0.016 240);
-  --sidebar-foreground: oklch(0.88 0.01 240);
-  --sidebar-primary: oklch(0.58 0.22 240);
-  --sidebar-primary-foreground: oklch(0.98 0.005 240);
-  --sidebar-accent: oklch(0.28 0.025 240);
-  --sidebar-accent-foreground: oklch(0.88 0.01 240);
-  --sidebar-border: oklch(0.28 0.02 240);
-  --sidebar-ring: oklch(0.58 0.22 240);
+  --sidebar: #0A0E1A;
+  --sidebar-foreground: #F8FAFC;
+  --sidebar-primary: #3B82F6;
+  --sidebar-primary-foreground: #0A0E1A;
+  --sidebar-accent: #1F2937;
+  --sidebar-accent-foreground: #F8FAFC;
+  --sidebar-border: #1F2937;
+  --sidebar-ring: #3B82F6;
 }
 
 @theme inline {
@@ -165,13 +152,14 @@
 
   /* Typography */
   --font-sans: var(--font-sans);
+  --font-serif: var(--font-serif);
   --font-mono: var(--font-mono);
 
   /* Radius */
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
-  --radius-xl: calc(var(--radius) + 4px);
+  --radius-xl: calc(var(--radius) + 2px);
 }
 
 @layer base {
@@ -189,7 +177,7 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-semibold tracking-tight;
+    @apply font-serif tracking-tight font-semibold;
   }
 
   code, pre {
@@ -210,4 +198,76 @@
   ::-webkit-scrollbar-thumb {
     @apply bg-muted-foreground/20 rounded-full hover:bg-muted-foreground/40;
   }
+}
+
+/* Custom Premium SaaS Card & Button Classes */
+.neo-border {
+  border: 1px solid var(--border);
+}
+
+.neo-card {
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03), 0 0 0 1px rgba(0, 0, 0, 0.01);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.neo-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+}
+
+.dark .neo-card {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+}
+.dark .neo-card:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+}
+
+.neo-button {
+  border: 1px solid var(--border);
+  transition: all 0.15s ease-in-out;
+}
+.neo-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+.neo-button:active {
+  transform: translateY(1px);
+}
+
+/* Force override of hardcoded inline font styles from AI template */
+[style*="font-family: Sora"],
+[style*="font-family: 'Sora'"],
+[style*="font-family: Sora, sans-serif"],
+[style*="font-family: 'Sora', sans-serif"] {
+  font-family: var(--font-serif) !important;
+}
+
+[style*="font-family: JetBrains Mono"],
+[style*="font-family: 'JetBrains Mono'"],
+[style*="font-family: JetBrains Mono, monospace"],
+[style*="font-family: 'JetBrains Mono', monospace"] {
+  font-family: var(--font-mono) !important;
+}
+
+/* Automatically elevate raw bg-card elements to premium SaaS cards */
+.bg-card.border {
+  border: 1px solid var(--border) !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: var(--radius) !important;
+}
+
+.bg-card.border:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+}
+
+.dark .bg-card.border {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+}
+.dark .bg-card.border:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
 }

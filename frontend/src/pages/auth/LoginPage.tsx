@@ -34,32 +34,32 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-[420px]">
         {/* Logo */}
         <div className="flex items-center gap-3 mb-8 justify-center">
-          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg">
+          <div className="w-10 h-10 rounded-sm border-1.5 border-border bg-primary flex items-center justify-center shadow-[2px_2px_0px_0px_var(--border)]">
             <Briefcase className="w-5 h-5 text-primary-foreground" />
           </div>
           <span className="text-2xl font-bold text-foreground" style={{ fontFamily: 'Sora, sans-serif' }}>NexaHR</span>
         </div>
 
-        <div className="bg-card border border-border rounded-2xl shadow-xl p-8">
+        <div className="neo-card p-8">
           <div className="mb-6">
             <h1 className="text-xl font-bold text-foreground mb-1" style={{ fontFamily: 'Sora, sans-serif' }}>Welcome back</h1>
             <p className="text-sm text-muted-foreground">Sign in to your NexaHR account</p>
           </div>
 
           {/* Demo credentials */}
-          <div className="flex gap-2 mb-5">
-            <button onClick={() => setDemo('hr')} className="flex-1 text-xs py-1.5 px-3 rounded-lg border border-border bg-muted/50 hover:bg-accent transition-all font-medium">
+          <div className="flex gap-3 mb-5">
+            <button onClick={() => setDemo('hr')} className="flex-1 text-xs py-2 px-3 rounded-sm border-1.5 border-border bg-card hover:bg-accent hover:-translate-y-[1px] active:translate-y-[1px] shadow-[2px_2px_0px_var(--border)] active:shadow-[1px_1px_0px_var(--border)] transition-all font-semibold font-mono">
               👤 HR Manager
             </button>
-            <button onClick={() => setDemo('employee')} className="flex-1 text-xs py-1.5 px-3 rounded-lg border border-border bg-muted/50 hover:bg-accent transition-all font-medium">
+            <button onClick={() => setDemo('employee')} className="flex-1 text-xs py-2 px-3 rounded-sm border-1.5 border-border bg-card hover:bg-accent hover:-translate-y-[1px] active:translate-y-[1px] shadow-[2px_2px_0px_var(--border)] active:shadow-[1px_1px_0px_var(--border)] transition-all font-semibold font-mono">
               👨‍💼 Employee
             </button>
           </div>
-          <p className="text-[11px] text-muted-foreground text-center mb-5 -mt-2">← Click to auto-fill demo credentials</p>
+          <p className="text-[10px] text-muted-foreground font-mono text-center mb-5 -mt-2">← Click to auto-fill credentials</p>
 
           {error && (
             <div className="flex items-center gap-2 text-destructive text-sm bg-destructive/10 border border-destructive/20 rounded-lg p-3 mb-5">
