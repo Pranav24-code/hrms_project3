@@ -79,29 +79,37 @@ export default function LoginPage() {
 
           {/* Demo credentials */}
           <div className="flex gap-2 mb-5">
-           <button
-  type="button"
-  onClick={() => setRole("Manager")}
-  className={`flex-1 text-xs py-1.5 px-3 rounded-lg border transition-all font-medium ${
-    role === "Manager"
-      ? "bg-primary text-white"
-      : "bg-muted/50 hover:bg-accent"
-  }`}
->
-  👤 Manager
-</button>
+            <button
+              type="button"
+              onClick={() => {
+                setRole("Manager");
+                setEmail("hr@nexahr.com");
+                setPassword("Admin@123");
+              }}
+              className={`flex-1 text-xs py-1.5 px-3 rounded-lg border transition-all font-medium ${
+                role === "Manager"
+                  ? "bg-primary text-white"
+                  : "bg-muted/50 hover:bg-accent"
+              }`}
+            >
+              👤 Manager
+            </button>
 
-<button
-  type="button"
-  onClick={() => setRole("Employee")}
-  className={`flex-1 text-xs py-1.5 px-3 rounded-lg border transition-all font-medium ${
-    role === "Employee"
-      ? "bg-primary text-white"
-      : "bg-muted/50 hover:bg-accent"
-  }`}
->
-  👨‍💼 Employee
-</button>
+            <button
+              type="button"
+              onClick={() => {
+                setRole("Employee");
+                setEmail("employee@nexahr.com");
+                setPassword("Admin@123");
+              }}
+              className={`flex-1 text-xs py-1.5 px-3 rounded-lg border transition-all font-medium ${
+                role === "Employee"
+                  ? "bg-primary text-white"
+                  : "bg-muted/50 hover:bg-accent"
+              }`}
+            >
+              👨‍💼 Employee
+            </button>
           </div>
           <p className="text-[10px] text-muted-foreground font-mono text-center mb-5 -mt-2">← Click to auto-fill credentials</p>
 
