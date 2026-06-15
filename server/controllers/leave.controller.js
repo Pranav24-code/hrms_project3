@@ -123,3 +123,23 @@ export const updateLeaveStatus = async (req, res) => {
     });
   }
 };
+
+export const getLatestPendingLeaves = async (req, res) => {
+  try {
+    const leaves = await Leave.find({ status: "pending" })
+      .populate("employee", "name email employeeId")
+      .sort({ createdAt: -1 }) // newest requests first
+      .limit(5);
+
+    res.status(200).json({
+      success: true,
+      count: leaves.length,
+      leaves,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
