@@ -6,7 +6,7 @@ import {
   ChevronRight, Menu, Search, Sun, Moon, ChevronDown, Briefcase,
   UserCheck, FileText, X, TrendingUp
 } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
+
 import { mockNotifications } from '@/constants/mockData';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +18,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import { useSelector, useDispatch } from "react-redux";
+import { logoutUser } from "@/redux/slice/authslice";
+
+
 
 const navItems = [
   { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', roles: ['employee', 'hr_manager'] },
@@ -40,10 +44,19 @@ const navItems = [
 ];
 
 function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
-  const { user, logout } = useAuth();
+
   const location = useLocation();
   const navigate = useNavigate();
   const [openGroups, setOpenGroups] = useState<string[]>(['/leave']);
+   const user = useSelector((state: any) => state.auth.user);
+
+
+const dispatch = useDispatch();
+
+const logout = () => {
+  dispatch(logoutUser());
+  navigate("/login");
+};
 
   const filteredNav = navItems.filter(item =>
     user?.role && item.roles.includes(user.role)
@@ -57,6 +70,7 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
   const toggleGroup = (path: string) => {
     setOpenGroups(prev => prev.includes(path) ? prev.filter(p => p !== path) : [...prev, path]);
   };
+ 
 
   return (
     <aside
@@ -157,7 +171,7 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
           <div className="flex items-center gap-2.5 mb-2">
             <Avatar className="h-8 w-8">
               <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
-                {user.firstName[0]}{user.lastName[0]}
+                {user.name?.charAt(0)}
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1">
@@ -195,10 +209,18 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
 }
 
 function TopNavbar({ sidebarCollapsed, onMenuClick }: { sidebarCollapsed: boolean; onMenuClick: () => void }) {
-  const { user, switchRole, logout } = useAuth();
+  // const { user, switchRole, logout } = useAuth();
   const [isDark, setIsDark] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+const user = useSelector((state: any) => state.auth.user);
+
+const logout = () => {
+  dispatch(logoutUser());
+  navigate("/login");
+};
   const unreadCount = mockNotifications.filter(n => !n.read).length;
 
   useEffect(() => {
@@ -264,12 +286,12 @@ function TopNavbar({ sidebarCollapsed, onMenuClick }: { sidebarCollapsed: boolea
               <button className="flex items-center gap-2 pl-2 pr-1 py-1 rounded-lg hover:bg-accent transition-all ml-1">
                 <Avatar className="h-7 w-7">
                   <AvatarFallback className="bg-primary text-primary-foreground text-[11px] font-bold">
-                    {user.firstName[0]}{user.lastName[0]}
+                    {user.name}
                   </AvatarFallback>
                 </Avatar>
                 <div className="hidden md:block text-left">
                   <p className="text-xs font-semibold leading-none">{user.firstName}</p>
-                  <p className="text-[10px] text-muted-foreground capitalize leading-none mt-0.5">{user.role.replace('_', ' ')}</p>
+                  <p className="text-[10px] text-muted-foreground capitalize leading-none mt-0.5">{user.role}</p>
                 </div>
                 <ChevronDown className="w-3 h-3 text-muted-foreground" />
               </button>

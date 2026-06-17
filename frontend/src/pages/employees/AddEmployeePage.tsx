@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import api from "@/utils/api";
 
 const steps = [
   { id: 1, title: 'Personal Info', icon: User },
@@ -19,21 +20,78 @@ export default function AddEmployeePage() {
   const navigate = useNavigate();
   const [current, setCurrent] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({
-    firstName: '', lastName: '', email: '', phone: '', dateOfBirth: '', gender: '',
-    address: '', department: '', designation: '', joiningDate: '', role: 'employee',
-    basicSalary: '', bonus: '', allowance: ''
-  });
+const [form, setForm] = useState({
+  firstName: "",
+  lastName: "",
+  email: "",
+  password: "",
+
+  phone: "",
+  dateOfBirth: "",
+  gender: "",
+  address: "",
+
+  department: "",
+  designation: "",
+  joiningDate: "",
+  role: "Employee",
+
+  basicSalary: "",
+  bonus: "",
+  allowance: "",
+});
 
   const set = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
 
   const handleSubmit = async () => {
+  try {
     setLoading(true);
-    await new Promise(r => setTimeout(r, 1500));
+    console.log(form);
+console.log("Gender:", form.gender);
+
+    const payload = {
+      firstName: form.firstName,
+      lastName: form.lastName,
+      email: form.email,
+      password: form.password,
+
+      phone: form.phone,
+      dateOfBirth: form.dateOfBirth,
+      gender:
+  form.gender.charAt(0).toUpperCase() +
+  form.gender.slice(1).toLowerCase(),
+      address: form.address,
+
+      department: form.department,
+      designation: form.designation,
+      joiningDate: form.joiningDate,
+
+      role: form.role,
+
+      basicSalary: Number(form.basicSalary),
+      bonus: Number(form.bonus),
+      allowance: Number(form.allowance),
+    };
+
+    const res = await api.post("/employee/add", payload);
+
+    toast.success(res.data.message);
+    
+
+    navigate("/employees");
+
+  } catch (err: any) {
+
+    toast.error(
+      err.response?.data?.message || "Failed to add employee"
+    );
+
+  } finally {
+
     setLoading(false);
-    toast.success('Employee added successfully!');
-    navigate('/employees');
-  };
+
+  }
+};
 
   return (
     <div className="space-y-5 max-w-3xl">
@@ -87,12 +145,13 @@ export default function AddEmployeePage() {
               <div className="space-y-1.5"><Label className="text-xs">First Name *</Label><Input placeholder="John" value={form.firstName} onChange={e => set('firstName', e.target.value)} className="h-9" /></div>
               <div className="space-y-1.5"><Label className="text-xs">Last Name *</Label><Input placeholder="Doe" value={form.lastName} onChange={e => set('lastName', e.target.value)} className="h-9" /></div>
               <div className="space-y-1.5"><Label className="text-xs">Email Address *</Label><Input type="email" placeholder="john@nexahr.com" value={form.email} onChange={e => set('email', e.target.value)} className="h-9" /></div>
+              <div className="space-y-1.5"><Label className="text-xs">Password *</Label><Input type="password" value={form.password}onChange={(e) => set("password", e.target.value)}/></div>
               <div className="space-y-1.5"><Label className="text-xs">Phone Number</Label><Input placeholder="+1 (555) 000-0000" value={form.phone} onChange={e => set('phone', e.target.value)} className="h-9" /></div>
               <div className="space-y-1.5"><Label className="text-xs">Date of Birth</Label><Input type="date" value={form.dateOfBirth} onChange={e => set('dateOfBirth', e.target.value)} className="h-9" /></div>
               <div className="space-y-1.5"><Label className="text-xs">Gender</Label>
                 <Select value={form.gender} onValueChange={v => set('gender', v)}>
                   <SelectTrigger className="h-9"><SelectValue placeholder="Select gender" /></SelectTrigger>
-                  <SelectContent><SelectItem value="male">Male</SelectItem><SelectItem value="female">Female</SelectItem><SelectItem value="other">Other</SelectItem></SelectContent>
+                  <SelectContent><SelectItem value="Male">Male</SelectItem><SelectItem value="Female">Female</SelectItem><SelectItem value="Other">Other</SelectItem></SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5 md:col-span-2"><Label className="text-xs">Address</Label><Input placeholder="123 Main St, City, State" value={form.address} onChange={e => set('address', e.target.value)} className="h-9" /></div>
@@ -116,7 +175,7 @@ export default function AddEmployeePage() {
               <div className="space-y-1.5"><Label className="text-xs">Role</Label>
                 <Select value={form.role} onValueChange={v => set('role', v)}>
                   <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                  <SelectContent><SelectItem value="employee">Employee</SelectItem><SelectItem value="hr_manager">HR Manager</SelectItem></SelectContent>
+                  <SelectContent><SelectItem value="Employee">Employee</SelectItem><SelectItem value="Manager">Manager</SelectItem></SelectContent>
                 </Select>
               </div>
             </div>
@@ -157,12 +216,13 @@ export default function AddEmployeePage() {
               {[
                 { label: 'Full Name', value: `${form.firstName || '—'} ${form.lastName || ''}` },
                 { label: 'Email', value: form.email || '—' },
+                
                 { label: 'Phone', value: form.phone || '—' },
                 { label: 'Department', value: form.department || '—' },
                 { label: 'Designation', value: form.designation || '—' },
                 { label: 'Joining Date', value: form.joiningDate || '—' },
                 { label: 'Basic Salary', value: form.basicSalary ? `$${(+form.basicSalary).toLocaleString()} / yr` : '—' },
-                { label: 'Role', value: form.role === 'hr_manager' ? 'HR Manager' : 'Employee' },
+                { label: 'Role', value: form.role === 'Manager' ? 'Manager' : 'Employee' },
               ].map(({ label, value }) => (
                 <div key={label} className="bg-muted/40 rounded-lg p-3">
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</p>

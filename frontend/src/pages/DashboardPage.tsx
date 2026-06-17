@@ -18,6 +18,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
+import { useSelector } from "react-redux";
+import { useEffect, useState } from 'react';
+import api from "@/utils/api";
+
 
 const statCards = [
   { title: 'Total Employees', value: '73', change: 4.3, icon: Users, color: 'blue', bg: 'bg-blue-500/10', iconColor: 'text-blue-500' },
@@ -60,10 +64,31 @@ const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?:
 };
 
 export default function DashboardPage() {
-  const { user } = useAuth();
+  const user = useSelector((state: any) => state.auth.user);
   const navigate = useNavigate();
-  const isHR = user?.role === 'hr_manager';
+  const isHR = user?.role === 'Manager';
   const pendingLeaves = mockLeaveRequests.filter(l => l.status === 'pending');
+
+  const [pendingrequest, setPendingrequest] = useState([]);
+
+useEffect(() => {
+  getPendingLeaves();
+}, []);
+
+const getPendingLeaves = async () => {
+  try {
+    const res = await api.get("/leave/latest-pending");
+
+    console.log(res.data); 
+
+    if (res.data.success) {
+      setPendingrequest(res.data.leaves);
+    }
+  } catch (error) {
+    console.log(error);
+  }
+};
+
 
   return (
     <div className="space-y-6">
@@ -252,23 +277,29 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-sm font-semibold text-foreground">Pending Approvals</h3>
-                <p className="text-xs text-muted-foreground">{pendingLeaves.length} requests awaiting review</p>
+                <p className="text-xs text-muted-foreground">{pendingrequest.length} requests awaiting review</p>
               </div>
               <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => navigate('/leave/approvals')}>
                 View all <ArrowRight className="w-3 h-3" />
               </Button>
             </div>
             <div className="space-y-2.5">
-              {pendingLeaves.slice(0, 4).map(l => (
-                <div key={l.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-muted/40 hover:bg-muted/80 transition-all">
+              {pendingrequest.slice(0, 4).map(leave => (
+                <div key={leave._id} className="flex items-center gap-3 p-2.5 rounded-lg bg-muted/40 hover:bg-muted/80 transition-all">
                   <Avatar className="h-7 w-7 shrink-0">
                     <AvatarFallback className="text-[10px] bg-primary/10 text-primary font-bold">
-                      {l.employeeName.split(' ').map(n => n[0]).join('')}
+                     {leave.employee?.name
+    ?.split(" ")
+    .map((n) => n[0])
+    .join("")}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-foreground truncate">{l.employeeName}</p>
-                    <p className="text-[10px] text-muted-foreground capitalize">{l.leaveType} · {l.days}d · {l.startDate}</p>
+                    <p className="text-xs font-semibold text-foreground truncate">  {leave.employee?.name}</p>
+                    <p className="text-[10px] text-muted-foreground capitalize">
+  {leave.leaveType} · {leave.totalDays}d ·{" "}
+  {new Date(leave.startDate).toLocaleDateString()}
+</p>
                   </div>
                   <Badge variant="secondary" className="text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 shrink-0">Pending</Badge>
                 </div>

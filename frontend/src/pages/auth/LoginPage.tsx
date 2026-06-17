@@ -1,37 +1,64 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Eye, EyeOff, Briefcase, Loader2, AlertCircle } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
+import { useDispatch } from "react-redux";
+import { setUser } from "@/redux/slice/authslice";
+import api from "@/utils/api";
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { login } = useAuth();
   const [email, setEmail] = useState('hr@nexahr.com');
   const [password, setPassword] = useState('Admin@123');
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const dispatch = useDispatch();
+  const [role, setRole] = useState<"Manager" | "Employee">("Manager");
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !password) { setError('Please fill in all fields.'); return; }
-    setError(''); setLoading(true);
-    const ok = await login(email, password);
+ const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  if (!email || !password) {
+    setError("Please fill in all fields.");
+    return;
+  }
+
+  try {
+    setLoading(true);
+    setError("");
+
+    const res = await api.post("/auth/login", {
+      email,
+      password,
+    });
+
+    // Check selected role
+    if (res.data.user.role !== role) {
+      setError(
+        `You selected ${role}, but this account is ${res.data.user.role}.`
+      );
+      return;
+    }
+
+
+    dispatch(setUser(res.data.user));
+
+  
+    navigate("/dashboard");
+
+  } catch (err: any) {
+    setError(
+      err.response?.data?.message || "Invalid email or password"
+    );
+  } finally {
     setLoading(false);
-    if (ok) navigate('/dashboard');
-    else setError('Invalid email or password. Please try again.');
-  };
-
-  const setDemo = (role: 'hr' | 'employee') => {
-    if (role === 'hr') { setEmail('hr@nexahr.com'); setPassword('Admin@123'); }
-    else { setEmail('john.doe@nexahr.com'); setPassword('Employee@123'); }
-    setError('');
-  };
+  }
+};
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -51,11 +78,36 @@ export default function LoginPage() {
           </div>
 
           {/* Demo credentials */}
-          <div className="flex gap-3 mb-5">
-            <button onClick={() => setDemo('hr')} className="flex-1 text-xs py-2 px-3 rounded-sm border-1.5 border-border bg-card hover:bg-accent hover:-translate-y-[1px] active:translate-y-[1px] shadow-[2px_2px_0px_var(--border)] active:shadow-[1px_1px_0px_var(--border)] transition-all font-semibold font-mono">
-              👤 HR Manager
+          <div className="flex gap-2 mb-5">
+            <button
+              type="button"
+              onClick={() => {
+                setRole("Manager");
+                setEmail("hr@nexahr.com");
+                setPassword("Admin@123");
+              }}
+              className={`flex-1 text-xs py-1.5 px-3 rounded-lg border transition-all font-medium ${
+                role === "Manager"
+                  ? "bg-primary text-white"
+                  : "bg-muted/50 hover:bg-accent"
+              }`}
+            >
+              👤 Manager
             </button>
-            <button onClick={() => setDemo('employee')} className="flex-1 text-xs py-2 px-3 rounded-sm border-1.5 border-border bg-card hover:bg-accent hover:-translate-y-[1px] active:translate-y-[1px] shadow-[2px_2px_0px_var(--border)] active:shadow-[1px_1px_0px_var(--border)] transition-all font-semibold font-mono">
+
+            <button
+              type="button"
+              onClick={() => {
+                setRole("Employee");
+                setEmail("employee@nexahr.com");
+                setPassword("Admin@123");
+              }}
+              className={`flex-1 text-xs py-1.5 px-3 rounded-lg border transition-all font-medium ${
+                role === "Employee"
+                  ? "bg-primary text-white"
+                  : "bg-muted/50 hover:bg-accent"
+              }`}
+            >
               👨‍💼 Employee
             </button>
           </div>
