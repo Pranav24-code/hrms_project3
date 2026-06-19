@@ -14,8 +14,8 @@ const attendanceSchema = new mongoose.Schema(
     workingHours: { type: Number, default: 0 },
     status: {
       type: String,
-      enum: ["present", "abscent", "late", "half_day", "on_leave"],
-      default: "present,",
+      enum: ["present", "absent", "late", "half_day", "on_leave"],
+      default: "present",
     },
   },
   { timestamps: true },
@@ -23,7 +23,7 @@ const attendanceSchema = new mongoose.Schema(
 
 attendanceSchema.index(
   {
-    employe: 1,
+    employee: 1,
     date: 1,
   },
   { unique: true },
