@@ -204,3 +204,28 @@ export const getEmployeeAttendance =
       });
     }
   };
+
+
+  export const getTodayEmployeeAttendance = async (req, res) => {
+  try {
+    const { employeeId } = req.params;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const attendance = await Attendance.findOne({
+      employee: employeeId,
+      date: today,
+    });
+
+    res.status(200).json({
+      success: true,
+      attendance,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
