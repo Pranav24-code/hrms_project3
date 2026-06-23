@@ -21,9 +21,9 @@ export default function LeaveApprovalPage() {
   const [comments, setComments] = useState('');
   const [action, setAction] = useState<'approve' | 'reject' | null>(null);
   const user = useSelector((state: any) => state.auth.user);
-const pending = leaves.filter(l => l.status === "Pending");
-const approved = leaves.filter(l => l.status === "Approved");
-const rejected = leaves.filter(l => l.status === "Rejected");
+const pending = leaves.filter(l => l.status === "pending");
+const approved = leaves.filter(l => l.status === "approved");
+const rejected = leaves.filter(l => l.status === "rejected");
   
 
  const handleAction = async (

@@ -4,9 +4,10 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { UserCheck, UserX, Clock, AlertCircle, LogIn, LogOut } from 'lucide-react';
-import { useSelector } from 'react-redux';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { useSelector } from "react-redux";
+import api from "@/utils/api";
 
 const statusConfig: Record<string, { label: string; className: string; icon: any }> = {
   present: { label: 'Present', className: 'bg-green-500/10 text-green-600 border-green-500/20', icon: UserCheck },
@@ -21,28 +22,100 @@ export default function AttendancePage() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [checkedIn, setCheckedIn] = useState(false);
   const [checkInTime, setCheckInTime] = useState<string | null>(null);
+  const [attendance, setAttendance] = useState([]);
+const [stats, setStats] = useState({
+  present: 0,
+  absent: 0,
+  late: 0,
+  onLeave: 0,
+});
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  const handleAction = () => {
+const handleAction = async () => {
+  try {
     if (!checkedIn) {
-      setCheckedIn(true);
-      setCheckInTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-      toast.success('Successfully checked in!');
-    } else {
-      setCheckedIn(false);
-      setCheckInTime(null);
-      toast.info('Successfully checked out!');
-    }
-  };
+      await api.post("/attendance/checkin", {
+        employeeId: user.id,
+      });
 
-  const present = mockAttendance.filter(a => a.status === 'present').length;
-  const absent = mockAttendance.filter(a => a.status === 'absent').length;
-  const late = mockAttendance.filter(a => a.status === 'late').length;
-  const onLeave = mockAttendance.filter(a => a.status === 'on_leave').length;
+      toast.success("Checked in successfully");
+      setCheckedIn(true);
+    } else {
+      await api.post("/attendance/checkout", {
+        employeeId: user.id,
+      });
+
+      toast.success("Checked out successfully");
+      setCheckedIn(false);
+    }
+
+    fetchAttendance();
+    fetchStats();
+  } catch (error: any) {
+    toast.error(
+      error?.response?.data?.message ||
+      "Something went wrong"
+    );
+  }
+};
+
+const present = stats.present;
+const absent = stats.absent;
+const late = stats.late;
+const onLeave = stats.onLeave;
+
+ useEffect(() => {
+  fetchAttendance();
+  fetchStats();
+
+  if (user?.id) {
+    checkTodayStatus();
+  }
+}, [user]);
+
+const checkTodayStatus = async () => {
+  try {
+    const res = await api.get(
+      `/attendance/today/${user.id}`
+    );
+
+    const attendance = res.data.attendance;
+
+    if (
+      attendance &&
+      attendance.checkIn &&
+      !attendance.checkOut
+    ) {
+      setCheckedIn(true);
+    }
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+const fetchAttendance = async () => {
+  try {
+    const res = await api.get("/attendance/today");
+
+    setAttendance(res.data.attendance);
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+const fetchStats = async () => {
+  try {
+    const res = await api.get("/attendance/stats");
+
+    setStats(res.data.stats);
+  } catch (error) {
+    console.error(error);
+  }
+};
 
   return (
     <div className="space-y-5">
@@ -110,13 +183,13 @@ export default function AttendancePage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {mockAttendance.map(a => (
+              {attendance.map((a: any) => (
                 <tr key={a.id} className="hover:bg-muted/30 transition-colors">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2.5">
                       <Avatar className="h-7 w-7">
                         <AvatarFallback className="text-[10px] bg-primary/10 text-primary font-bold">
-                          {a.employeeName.split(' ').map(n => n[0]).join('')}
+                          {a.employee?.name}
                         </AvatarFallback>
                       </Avatar>
                       <span className="text-xs font-medium">{a.employeeName}</span>
