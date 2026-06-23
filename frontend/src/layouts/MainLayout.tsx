@@ -24,23 +24,23 @@ import { logoutUser } from "@/redux/slice/authslice";
 
 
 const navItems = [
-  { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', roles: ['employee', 'hr_manager'] },
-  { label: 'Employees', icon: Users, path: '/employees', roles: ['hr_manager'] },
-  { label: 'Departments', icon: Building2, path: '/departments', roles: ['hr_manager'] },
+  { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', roles: ['Employee', 'Manager'] },
+  { label: 'Employees', icon: Users, path: '/employees', roles: ['Manager'] },
+  { label: 'Departments', icon: Building2, path: '/departments', roles: ['Manager'] },
   {
-    label: 'Leave Management', icon: CalendarDays, path: '/leave', roles: ['employee', 'hr_manager'],
+    label: 'Leave Management', icon: CalendarDays, path: '/leave', roles: ['Employee', 'Manager'],
     children: [
-      { label: 'Apply Leave', path: '/leave/request', roles: ['employee'] },
-      { label: 'Leave History', path: '/leave/history', roles: ['employee'] },
-      { label: 'Approvals', path: '/leave/approvals', roles: ['hr_manager'] },
+      { label: 'Apply Leave', path: '/leave/request', roles: ['Employee'] },
+      { label: 'Leave History', path: '/leave/history', roles: ['Employee'] },
+      { label: 'Approvals', path: '/leave/approvals', roles: ['Manager'] },
     ]
   },
-  { label: 'Payroll', icon: DollarSign, path: '/payroll', roles: ['hr_manager'] },
-  { label: 'My Payslip', icon: FileText, path: '/payroll/payslip/p1', roles: ['employee'] },
-  { label: 'Attendance', icon: Clock, path: '/attendance', roles: ['employee', 'hr_manager'] },
-  { label: 'Reports', icon: BarChart3, path: '/reports', roles: ['hr_manager'] },
-  { label: 'Notifications', icon: Bell, path: '/notifications', roles: ['employee', 'hr_manager'] },
-  { label: 'Settings', icon: Settings, path: '/settings', roles: ['employee', 'hr_manager'] },
+  { label: 'Payroll', icon: DollarSign, path: '/payroll', roles: ['Manager'] },
+  { label: 'My Payslip', icon: FileText, path: '/payroll/payslip/p1', roles: ['Employee'] },
+  { label: 'Attendance', icon: Clock, path: '/attendance', roles: ['Employee', 'Manager'] },
+  { label: 'Reports', icon: BarChart3, path: '/reports', roles: ['Manager'] },
+  { label: 'Notifications', icon: Bell, path: '/notifications', roles: ['Employee', 'Manager'] },
+  { label: 'Settings', icon: Settings, path: '/settings', roles: ['Employee', 'Manager'] },
 ];
 
 function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
@@ -176,7 +176,7 @@ const logout = () => {
             </Avatar>
             <div className="min-w-0 flex-1">
               <p className="text-xs font-semibold text-sidebar-foreground truncate">{user.firstName} {user.lastName}</p>
-              <p className="text-[10px] text-sidebar-foreground/60 truncate capitalize">{user.role.replace('_', ' ')}</p>
+              <p className="text-[10px] text-sidebar-foreground/60 truncate capitalize">{user.role}</p>
             </div>
           </div>
           <Button variant="ghost" size="sm" className="w-full justify-start text-xs gap-2 text-destructive hover:text-destructive hover:bg-destructive/10 h-7" onClick={logout}>
@@ -305,10 +305,6 @@ const logout = () => {
                 <Settings className="w-4 h-4 mr-2" /> Settings
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => switchRole(user.role === 'hr_manager' ? 'employee' : 'hr_manager')}>
-                <UserCheck className="w-4 h-4 mr-2" />
-                Switch to {user.role === 'hr_manager' ? 'Employee' : 'HR Manager'}
-              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={logout} className="text-destructive focus:text-destructive">
                 <LogOut className="w-4 h-4 mr-2" /> Sign out

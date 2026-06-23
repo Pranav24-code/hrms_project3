@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { UserCheck, UserX, Clock, AlertCircle, LogIn, LogOut } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
+import { useSelector } from 'react-redux';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
@@ -17,7 +17,7 @@ const statusConfig: Record<string, { label: string; className: string; icon: any
 };
 
 export default function AttendancePage() {
-  const { user } = useAuth();
+  const user = useSelector((state: any) => state.auth.user);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [checkedIn, setCheckedIn] = useState(false);
   const [checkInTime, setCheckInTime] = useState<string | null>(null);
@@ -52,7 +52,7 @@ export default function AttendancePage() {
           <p className="text-sm text-muted-foreground">Today's attendance — {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
         </div>
         
-        {user?.role === 'employee' && (
+        {user?.role === 'Employee' && (
           <div className="bg-card border border-border p-3 px-5 rounded-2xl flex items-center gap-6 shadow-sm">
             <div className="text-center md:text-left">
               <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Current Time</p>

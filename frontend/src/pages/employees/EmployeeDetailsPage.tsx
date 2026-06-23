@@ -114,7 +114,7 @@ export default function EmployeeDetailsPage() {
                 { label: 'Employee ID', value: emp.employeeId, mono: true },
                 { label: 'Department', value: emp.department },
                 { label: 'Designation', value: emp.designation },
-                { label: 'Role', value: emp.role === 'hr_manager' ? 'HR Manager' : 'Employee' },
+                { label: 'Role', value: emp.role === 'Manager' ? 'HR Manager' : 'Employee' },
                 { label: 'Joining Date', value: new Date(emp.joiningDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) },
                 { label: 'Annual Salary', value: `$${emp.salary.toLocaleString()}`, mono: true },
               ].map(({ label, value, mono }) => (

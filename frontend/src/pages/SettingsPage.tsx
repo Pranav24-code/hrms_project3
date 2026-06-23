@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { User, Shield, Bell, Palette, Save, Loader2, Eye, EyeOff, Camera } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
+import { useSelector } from 'react-redux';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 export default function SettingsPage() {
-  const { user } = useAuth();
+  const user = useSelector((state: any) => state.auth.user);
   const [saving, setSaving] = useState(false);
   const [showOld, setShowOld] = useState(false);
   const [showNew, setShowNew] = useState(false);

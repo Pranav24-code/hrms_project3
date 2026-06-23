@@ -8,7 +8,7 @@ import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from 'recharts';
-import { useAuth } from '@/hooks/useAuth';
+
 import {
   mockEmployees, mockDepartments, mockLeaveRequests, mockPayroll,
   mockActivities, employeeGrowthData, leaveAnalyticsData,

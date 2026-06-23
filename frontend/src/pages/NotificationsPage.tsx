@@ -5,7 +5,7 @@ import type { Notification } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/hooks/useAuth';
+import { useSelector } from 'react-redux';
 import { toast } from 'sonner';
 
 const typeConfig = {
@@ -24,7 +24,7 @@ function formatTime(iso: string) {
 }
 
 export default function NotificationsPage() {
-  const { user } = useAuth();
+  const user = useSelector((state: any) => state.auth.user);
   const [notifications, setNotifications] = useState(mockNotifications);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
 
@@ -59,7 +59,7 @@ export default function NotificationsPage() {
           <p className="text-sm text-muted-foreground">{unreadCount} unread notifications</p>
         </div>
         <div className="flex gap-2">
-          {user?.role === 'hr_manager' && (
+          {user?.role === 'Manager' && (
             <Button size="sm" className="h-8 text-xs gap-1.5 bg-amber-600 hover:bg-amber-700 font-bold" onClick={handleBroadcast}>
               <Megaphone className="w-3.5 h-3.5" />Broadcast
             </Button>
