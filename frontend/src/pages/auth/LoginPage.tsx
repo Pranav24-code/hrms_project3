@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { useDispatch } from "react-redux";
-import { setUser } from "@/redux/slice/authslice";
+import { setUser } from "@/redux/slice/authSlice";
 import api from "@/utils/api";
 
 export default function LoginPage() {

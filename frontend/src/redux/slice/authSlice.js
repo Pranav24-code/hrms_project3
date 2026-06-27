@@ -12,7 +12,13 @@ const authSlice = createSlice({
 
   reducers: {
     setUser: (state, action) => {
-      state.user = action.payload;
+      const user = action.payload;
+      if (user && !user.firstName && user.name) {
+        const parts = user.name.split(' ');
+        user.firstName = parts[0] || '';
+        user.lastName = parts.slice(1).join(' ') || '';
+      }
+      state.user = user;
       state.isAuthenticated = true;
     },
 

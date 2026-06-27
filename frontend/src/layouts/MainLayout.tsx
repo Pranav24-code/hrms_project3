@@ -19,7 +19,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { useSelector, useDispatch } from "react-redux";
-import { logoutUser } from "@/redux/slice/authslice";
+import { logoutUser } from "@/redux/slice/authSlice";
 
 
 
