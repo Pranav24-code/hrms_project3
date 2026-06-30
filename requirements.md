@@ -51,7 +51,7 @@ The system supports two core user roles with distinct permissions:
   - Full Name, Email, Phone, Role (Manager/Employee)
   - Date of Joining, Designation, Department
   - Salary Information (Basic Salary, HRA, Allowances)
-- **Directory Page**: Paginated list of all employees with search and filter capabilities (by department, role, or status).
+- **Directory Page**: Complete list of all employees with search, advanced filtering (by department, role, status), sorting (by name, joining date, salary), and inline record deletion.
 
 ### 2.4 Department Management
 - **Structure**: Create, edit, and list departments with fields:
@@ -88,13 +88,17 @@ The system supports two core user roles with distinct permissions:
 - **API Security**: Middleware-driven JWT verification for all API routes under `/api`.
 - **Database Safety**: Schema validation using Mongoose to ensure integrity and prevent invalid data entry.
 
-### 3.2 Performance
+### 3.2 State Management & Performance
 - **Modern Bundling**: The frontend uses Vite for rapid compilation, tree-shaking, and efficient production bundles.
 - **Data Fetching**: Utilization of `react-query` (TanStack Query) for smart caching, background fetching, and synchronization of server states.
-- **Client-Side State**: Zustand for fast, lightweight client-side user session and preference storage.
+- **Client-Side State**: Redux Toolkit (integrated via `@reduxjs/toolkit` and `react-redux`) for global authentication state management.
 
 ### 3.3 Usability & Design
 - **Theme**: Complete light and dark mode implementation.
 - **Responsive Layout**: Designed with a mobile-first approach using Tailwind CSS, supporting desktop monitors, tablets, and smartphones seamlessly.
 - **UI Toolkit**: Interactive dashboards, tables, and buttons built with Radix primitives via `shadcn/ui`.
 - **Micro-Animations**: Framer Motion transitions for sidebar toggle, modal popup, page transitions, and toast alerts.
+
+### 3.4 Resilience & Development Tooling
+- **Offline API Interceptor**: Network requests made via `axios` feature a fallback interceptor that catches connectivity failures (e.g. server offline, network down) and redirects them to a mock database synced in `LocalStorage`. This permits full frontend operation and CRUD workflows even without an active API backend.
+- **Development In-Memory Database**: MongoDB Memory Server (`mongodb-memory-server`) is integrated in `mongodb-mem/` to run an isolated, ephemeral database instance on port `27017` locally, eliminating local setup dependencies.

@@ -18,7 +18,7 @@ Ensure you have the following installed on your machine before setting up the ap
 
 1. **Node.js**: Version `18.x` or higher (LTS recommended)
 2. **Package Manager**: `npm` (v9+) or `yarn` / `pnpm`
-3. **Database**: MongoDB (Local community server running on port `27017` or a MongoDB Atlas connection string)
+3. **Database**: MongoDB (Local community server running on port `27017`, a MongoDB Atlas connection string, or the integrated **MongoDB Memory Server** for local development).
 
 ---
 
@@ -35,10 +35,16 @@ hrms_project3/
 │   │   ├── hooks/          # Custom hooks (useAuth, etc.)
 │   │   ├── layouts/        # Layout shells (MainLayout)
 │   │   ├── pages/          # App Pages (Dashboard, Employees, Leave, Payroll, etc.)
+│   │   ├── redux/          # Redux Toolkit store and slices (authSlice)
 │   │   ├── types/          # TypeScript declarations
 │   │   └── App.tsx         # Route router and page shells
 │   ├── package.json        # Frontend dependencies
 │   └── vite.config.ts      # Vite bundler configuration
+│
+├── mongodb-mem/            # Integrated MongoDB Memory Server for local development
+│   ├── data/               # Ephemeral local database storage directory
+│   ├── db.js               # Entry script to spin up the in-memory MongoDB instance
+│   └── package.json        # Memory server dependencies
 │
 └── server/                 # Express Backend server
     ├── controllers/        # Request handlers & logic (auth controller)
@@ -53,9 +59,31 @@ hrms_project3/
 
 ## 🚀 Setup & Installation Instructions
 
-Follow these steps to run both frontend and backend services:
+Follow these steps to run the services:
 
-### 1. Backend Setup (`/server`)
+### 1. In-Memory Database Setup (`/mongodb-mem`) [Optional]
+
+If you do not have a local MongoDB server installed or running, you can launch the integrated in-memory MongoDB server:
+
+Navigate to the database memory server directory:
+```bash
+cd mongodb-mem
+```
+
+Install dependencies:
+```bash
+npm install
+```
+
+Start the in-memory server:
+```bash
+npm start
+```
+This will start an ephemeral MongoDB instance running on port `27017` (stored in the `/mongodb-mem/data` folder).
+
+---
+
+### 2. Backend Setup (`/server`)
 
 Navigate to the server directory and set up configuration:
 ```bash
@@ -88,7 +116,7 @@ The server will start on `http://localhost:5000`.
 
 ---
 
-### 2. Frontend Setup (`/frontend`)
+### 3. Frontend Setup (`/frontend`)
 
 Open a new terminal window, navigate to the frontend directory:
 ```bash
@@ -110,7 +138,16 @@ Start the Vite development server:
 ```bash
 npm run dev
 ```
-The client app will launch at `http://localhost:5173/` (or the next available port).
+The client app will launch at `http://localhost:5173/`.
+
+---
+
+### 4. Offline Fallback & Mock Mode
+
+The frontend application includes a built-in response interceptor inside `frontend/src/utils/api.js`. If the backend server is offline or unreachable, the application will automatically:
+1. Print a warning `[Offline API Mode] Server down or unreachable` in the browser console.
+2. Fall back to reading and writing mock data to the browser's `LocalStorage`.
+3. Support full CRUD functionality (adding employees, submitting leave requests, recording attendance check-in/out, logging in/out) directly within the frontend.
 
 ---
 

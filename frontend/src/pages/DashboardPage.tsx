@@ -60,10 +60,10 @@ export default function DashboardPage() {
       setLoading(true);
       // Fetch data in parallel
       const [empRes, leaveRes, pendingRes, attRes] = await Promise.all([
-        api.get("/employee/get-emp").catch(() => ({ data: { employees: [] } })),
-        api.get("/leave/all").catch(() => ({ data: { leaves: [] } })),
-        api.get("/leave/latest-pending").catch(() => ({ data: { leaves: [] } })),
-        api.get("/attendance/today").catch(() => ({ data: { attendance: [] } }))
+        api.get("/employee/get-emp").catch(() => ({ data: { employees: [] as any[] } })),
+        api.get("/leave/all").catch(() => ({ data: { leaves: [] as any[] } })),
+        api.get("/leave/latest-pending").catch(() => ({ data: { leaves: [] as any[] } })),
+        api.get("/attendance/today").catch(() => ({ data: { attendance: [] as any[] } }))
       ]);
 
       setEmployees(empRes.data.employees || []);
