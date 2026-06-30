@@ -35,6 +35,7 @@ export default function PayrollDashboardPage() {
       </div>
 
       {/* Stats */}
+  
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
           { title: 'Total Disbursed', value: `$${totalPaid.toLocaleString()}`, icon: DollarSign, color: 'green' },
