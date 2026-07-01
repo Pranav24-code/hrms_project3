@@ -4,10 +4,10 @@ import {
   LayoutDashboard, Users, Building2, CalendarDays, DollarSign,
   Clock, BarChart3, Bell, Settings, LogOut, ChevronLeft,
   ChevronRight, Menu, Search, Sun, Moon, ChevronDown, Briefcase,
-  UserCheck, FileText, X, TrendingUp
+  UserCheck, FileText, X, TrendingUp, FolderOpen, CalendarRange
 } from 'lucide-react';
 
-import { mockNotifications } from '@/constants/mockData';
+
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -38,6 +38,8 @@ const navItems = [
   { label: 'Payroll', icon: DollarSign, path: '/payroll', roles: ['Manager'] },
   { label: 'My Payslip', icon: FileText, path: '/payroll/payslip/p1', roles: ['Employee'] },
   { label: 'Attendance', icon: Clock, path: '/attendance', roles: ['Employee', 'Manager'] },
+  { label: 'Document Center', icon: FolderOpen, path: '/documents', roles: ['Employee', 'Manager'] },
+  { label: 'Company Calendar', icon: CalendarRange, path: '/calendar', roles: ['Employee', 'Manager'] },
   { label: 'Reports', icon: BarChart3, path: '/reports', roles: ['Manager'] },
   { label: 'Notifications', icon: Bell, path: '/notifications', roles: ['Employee', 'Manager'] },
   { label: 'Settings', icon: Settings, path: '/settings', roles: ['Employee', 'Manager'] },
@@ -221,7 +223,7 @@ const logout = () => {
   dispatch(logoutUser());
   navigate("/login");
 };
-  const unreadCount = mockNotifications.filter(n => !n.read).length;
+  const unreadCount = 0;
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDark);
@@ -234,6 +236,7 @@ const logout = () => {
       '/departments': 'Departments', '/leave/request': 'Apply Leave', '/leave/history': 'Leave History',
       '/leave/approvals': 'Leave Approvals', '/payroll': 'Payroll', '/attendance': 'Attendance',
       '/reports': 'Reports', '/notifications': 'Notifications', '/settings': 'Settings',
+      '/documents': 'Document Center', '/calendar': 'Company Calendar',
     };
     if (path.startsWith('/employees/') && path !== '/employees/add') return 'Employee Details';
     if (path.startsWith('/departments/')) return 'Department Details';

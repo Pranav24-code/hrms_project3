@@ -1,5 +1,25 @@
 import mongoose from "mongoose";
 
+const sessionSchema = new mongoose.Schema(
+  {
+    checkIn: {
+      type: Date,
+      required: true,
+    },
+    checkOut: {
+      type: Date,
+      default: null,
+    },
+    workingHours: {
+      type: Number,
+      default: 0,
+    },
+  },
+  {
+    _id: false,
+  },
+);
+
 const attendanceSchema = new mongoose.Schema(
   {
     employee: {
@@ -12,6 +32,10 @@ const attendanceSchema = new mongoose.Schema(
     checkIn: { type: Date, default: null },
     checkOut: { type: Date, default: null },
     workingHours: { type: Number, default: 0 },
+    sessions: {
+      type: [sessionSchema],
+      default: [],
+    },
     status: {
       type: String,
       enum: ["present", "absent", "late", "half_day", "on_leave"],

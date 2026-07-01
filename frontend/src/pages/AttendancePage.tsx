@@ -1,13 +1,31 @@
 import { useState, useEffect } from 'react';
-import { mockAttendance } from '@/constants/mockData';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
-import { UserCheck, UserX, Clock, AlertCircle, LogIn, LogOut } from 'lucide-react';
+import { UserCheck, UserX, Clock, AlertCircle, LogIn, LogOut, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useSelector } from "react-redux";
 import api from "@/utils/api";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+
+type AttendanceSession = {
+  checkIn: string;
+  checkOut?: string | null;
+  workingHours?: number;
+};
+
+type AttendanceRecord = {
+  _id: string;
+  employee?: {
+    name?: string;
+  };
+  checkIn?: string | null;
+  checkOut?: string | null;
+  workingHours?: number;
+  sessions?: AttendanceSession[];
+  status: string;
+};
 
 const statusConfig: Record<string, { label: string; className: string; icon: any }> = {
   present: { label: 'Present', className: 'bg-green-500/10 text-green-600 border-green-500/20', icon: UserCheck },
@@ -21,8 +39,8 @@ export default function AttendancePage() {
   const user = useSelector((state: any) => state.auth.user);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [checkedIn, setCheckedIn] = useState(false);
-  const [checkInTime, setCheckInTime] = useState<string | null>(null);
-  const [attendance, setAttendance] = useState([]);
+  const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
+  const [selectedAttendance, setSelectedAttendance] = useState<AttendanceRecord | null>(null);
 const [stats, setStats] = useState({
   present: 0,
   absent: 0,
@@ -84,13 +102,17 @@ const checkTodayStatus = async () => {
     );
 
     const attendance = res.data.attendance;
+    const sessions = attendance?.sessions ?? [];
+    const lastSession = sessions[sessions.length - 1];
 
     if (
-      attendance &&
-      attendance.checkIn &&
-      !attendance.checkOut
+      lastSession &&
+      lastSession.checkIn &&
+      !lastSession.checkOut
     ) {
       setCheckedIn(true);
+    } else {
+      setCheckedIn(false);
     }
   } catch (err) {
     console.error(err);
@@ -101,10 +123,34 @@ const fetchAttendance = async () => {
   try {
     const res = await api.get("/attendance/today");
 
-    setAttendance(res.data.attendance);
+    setAttendance(res.data.attendance ?? []);
   } catch (error) {
     console.error(error);
   }
+};
+
+const formatTime = (iso?: string | null) => {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+};
+
+const formatSessionHours = (session: AttendanceSession) => {
+  if (typeof session.workingHours === 'number') {
+    return `${session.workingHours.toFixed(2)}h`;
+  }
+
+  if (session.checkOut) {
+    const hours =
+      (new Date(session.checkOut).getTime() - new Date(session.checkIn).getTime()) /
+      (1000 * 60 * 60);
+    return `${hours.toFixed(2)}h`;
+  }
+
+  return 'In Progress';
 };
 
 const fetchStats = async () => {
@@ -177,14 +223,14 @@ const fetchStats = async () => {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-muted/40">
-                {['Employee', 'Department', 'Check-In', 'Check-Out', 'Working Hours', 'Status'].map(h => (
+                {['Employee', 'Department', 'Latest Check-In', 'Latest Check-Out', 'Working Hours', 'Sessions', 'Status', 'Actions'].map(h => (
                   <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {attendance.map((a: any) => (
-                <tr key={a.id} className="hover:bg-muted/30 transition-colors">
+              {attendance.map((a) => (
+                <tr key={a._id} className="hover:bg-muted/30 transition-colors">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2.5">
                       <Avatar className="h-7 w-7">
@@ -192,17 +238,29 @@ const fetchStats = async () => {
                           {a.employee?.name}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="text-xs font-medium">{a.employeeName}</span>
+                      <span className="text-xs font-medium">{a.employee?.name || '—'}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-xs text-muted-foreground">{a.department}</td>
-                  <td className="px-4 py-3 text-xs font-mono">{a.checkIn || '—'}</td>
-                  <td className="px-4 py-3 text-xs font-mono">{a.checkOut || '—'}</td>
+                  <td className="px-4 py-3 text-xs text-muted-foreground">—</td>
+                  <td className="px-4 py-3 text-xs font-mono">{formatTime(a.checkIn)}</td>
+                  <td className="px-4 py-3 text-xs font-mono">{formatTime(a.checkOut)}</td>
                   <td className="px-4 py-3 text-xs font-mono">{a.workingHours ? `${a.workingHours}h` : '—'}</td>
+                  <td className="px-4 py-3 text-xs font-mono">{a.sessions?.length ?? 0}</td>
                   <td className="px-4 py-3">
                     <Badge variant="outline" className={cn("text-[10px]", statusConfig[a.status].className)}>
                       {statusConfig[a.status].label}
                     </Badge>
+                  </td>
+                  <td className="px-4 py-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs gap-1.5"
+                      onClick={() => setSelectedAttendance(a)}
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      Session History
+                    </Button>
                   </td>
                 </tr>
               ))}
@@ -210,6 +268,46 @@ const fetchStats = async () => {
           </table>
         </div>
       </div>
+
+      <Dialog open={!!selectedAttendance} onOpenChange={(open) => { if (!open) setSelectedAttendance(null); }}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle style={{ fontFamily: 'Sora, sans-serif' }}>
+              Session History - {selectedAttendance?.employee?.name || 'Employee'}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="rounded-xl border border-border overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border bg-muted/40">
+                  {['#', 'Check-In', 'Check-Out', 'Duration'].map((h) => (
+                    <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {(selectedAttendance?.sessions ?? []).length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                      No session data found.
+                    </td>
+                  </tr>
+                ) : (
+                  (selectedAttendance?.sessions ?? []).map((session, index) => (
+                    <tr key={`${session.checkIn}-${index}`} className="hover:bg-muted/30 transition-colors">
+                      <td className="px-4 py-3 text-xs font-mono">{index + 1}</td>
+                      <td className="px-4 py-3 text-xs font-mono">{formatTime(session.checkIn)}</td>
+                      <td className="px-4 py-3 text-xs font-mono">{formatTime(session.checkOut)}</td>
+                      <td className="px-4 py-3 text-xs font-mono">{formatSessionHours(session)}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

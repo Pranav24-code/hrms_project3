@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils';
 import { useSelector } from "react-redux";
 import { useEffect, useState } from 'react';
 import api from "@/utils/api";
+import { useSocket } from '@/context/SocketContext';
 
 
 const statCards = [
@@ -66,14 +67,29 @@ const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?:
 export default function DashboardPage() {
   const user = useSelector((state: any) => state.auth.user);
   const navigate = useNavigate();
+  const socket = useSocket();
   const isHR = user?.role === 'Manager';
   const pendingLeaves = mockLeaveRequests.filter(l => l.status === 'pending');
 
   const [pendingrequest, setPendingrequest] = useState([]);
 
-useEffect(() => {
-  getPendingLeaves();
-}, []);
+  useEffect(() => {
+    getPendingLeaves();
+  }, []);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleLeaveListUpdated = () => {
+      getPendingLeaves();
+    };
+
+    socket.on('leave_list_updated', handleLeaveListUpdated);
+
+    return () => {
+      socket.off('leave_list_updated', handleLeaveListUpdated);
+    };
+  }, [socket]);
 
 const getPendingLeaves = async () => {
   try {
@@ -304,7 +320,7 @@ const getPendingLeaves = async () => {
                   <Badge variant="secondary" className="text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 shrink-0">Pending</Badge>
                 </div>
               ))}
-              {pendingLeaves.length === 0 && (
+              {pendingrequest.length === 0 && (
                 <div className="text-center py-8 text-muted-foreground">
                   <CheckCheck className="w-8 h-8 mx-auto mb-2 opacity-40" />
                   <p className="text-xs">All caught up!</p>

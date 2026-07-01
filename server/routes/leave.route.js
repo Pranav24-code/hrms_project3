@@ -4,7 +4,8 @@ import {
   getAllLeaves,
   getMyLeaves,
   updateLeaveStatus,
-   getLatestPendingLeaves
+  getLatestPendingLeaves,
+  getApprovedLeavesForCalendar
 } from "../controllers/leave.controller.js";
 
 const router = express.Router();
@@ -18,5 +19,7 @@ router.get("/my/:id", getMyLeaves);
 router.put("/status/:id", updateLeaveStatus);
 
 router.get("/latest-pending", getLatestPendingLeaves);
+
+router.get("/calendar", getApprovedLeavesForCalendar);
 
 export default router;

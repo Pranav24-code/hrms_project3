@@ -1,6 +1,35 @@
 import Attendance from "../models/attendance.model.js";
 import User from "../models/user.model.js";
 
+const getDayStart = () => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return today;
+};
+
+const syncAggregateAttendanceFields = (attendance) => {
+  const sessions = attendance.sessions || [];
+
+  if (sessions.length === 0) {
+    attendance.checkIn = null;
+    attendance.checkOut = null;
+    attendance.workingHours = 0;
+    return;
+  }
+
+  attendance.checkIn = sessions[0].checkIn;
+
+  const lastSession = sessions[sessions.length - 1];
+  attendance.checkOut = lastSession.checkOut || null;
+
+  const totalWorkingHours = sessions.reduce((sum, session) => {
+    if (!session.checkOut) return sum;
+    return sum + (session.checkOut - session.checkIn) / (1000 * 60 * 60);
+  }, 0);
+
+  attendance.workingHours = Number(totalWorkingHours.toFixed(2));
+};
+
 export const checkIn = async (req, res) => {
   try {
     const { employeeId } = req.body;
@@ -14,26 +43,45 @@ export const checkIn = async (req, res) => {
       });
     }
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const existingAttendance =
-      await Attendance.findOne({
-        employee: employeeId,
-        date: today,
-      });
-
-    if (existingAttendance) {
-      return res.status(400).json({
-        success: false,
-        message: "Already checked in today",
-      });
-    }
+    const today = getDayStart();
+    const existingAttendance = await Attendance.findOne({
+      employee: employeeId,
+      date: today,
+    });
 
     const now = new Date();
 
-    let status = "present";
+    if (existingAttendance) {
+      const sessions = existingAttendance.sessions || [];
+      const lastSession = sessions[sessions.length - 1];
 
+      if (lastSession && !lastSession.checkOut) {
+        return res.status(400).json({
+          success: false,
+          message: "Already checked in. Please check out first.",
+        });
+      }
+
+      sessions.push({
+        checkIn: now,
+      });
+
+      existingAttendance.sessions = sessions;
+      if (existingAttendance.status === "absent") {
+        existingAttendance.status = now.getHours() >= 10 ? "late" : "present";
+      }
+
+      syncAggregateAttendanceFields(existingAttendance);
+      await existingAttendance.save();
+
+      return res.status(200).json({
+        success: true,
+        message: "Checked in successfully",
+        attendance: existingAttendance,
+      });
+    }
+
+    let status = "present";
     if (now.getHours() >= 10) {
       status = "late";
     }
@@ -44,6 +92,7 @@ export const checkIn = async (req, res) => {
         employeeId: user.employeeId,
         date: today,
         checkIn: now,
+        sessions: [{ checkIn: now }],
         status,
       });
 
@@ -64,8 +113,7 @@ export const checkOut = async (req, res) => {
   try {
     const { employeeId } = req.body;
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = getDayStart();
 
     const attendance =
       await Attendance.findOne({
@@ -80,24 +128,36 @@ export const checkOut = async (req, res) => {
       });
     }
 
-    if (attendance.checkOut) {
+    const sessions = attendance.sessions || [];
+    const lastSession = sessions[sessions.length - 1];
+
+    if (!lastSession || !lastSession.checkIn) {
       return res.status(400).json({
         success: false,
-        message: "Already checked out",
+        message: "Please check in first",
+      });
+    }
+
+    if (lastSession.checkOut) {
+      return res.status(400).json({
+        success: false,
+        message: "Already checked out. Please check in again for a new session.",
       });
     }
 
     const checkoutTime = new Date();
 
-    const workingHours =
-      (checkoutTime - attendance.checkIn) /
+    const sessionWorkingHours =
+      (checkoutTime - lastSession.checkIn) /
       (1000 * 60 * 60);
 
-    attendance.checkOut = checkoutTime;
-    attendance.workingHours =
-      Number(workingHours.toFixed(2));
+    lastSession.checkOut = checkoutTime;
+    lastSession.workingHours = Number(sessionWorkingHours.toFixed(2));
+    attendance.sessions = sessions;
 
-    if (workingHours < 4) {
+    syncAggregateAttendanceFields(attendance);
+
+    if (attendance.workingHours < 4) {
       attendance.status = "half_day";
     }
 
@@ -210,13 +270,16 @@ export const getEmployeeAttendance =
   try {
     const { employeeId } = req.params;
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+      const today = getDayStart();
 
     const attendance = await Attendance.findOne({
       employee: employeeId,
       date: today,
     });
+
+    if (attendance) {
+      syncAggregateAttendanceFields(attendance);
+    }
 
     res.status(200).json({
       success: true,

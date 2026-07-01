@@ -1,13 +1,69 @@
-import { useState } from 'react';
-import { mockLeaveRequests } from '@/constants/mockData';
+import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { CalendarDays } from 'lucide-react';
+import { useSelector } from 'react-redux';
+import api from '@/utils/api';
+import { useSocket } from '@/context/SocketContext';
+
+type LeaveStatus = 'pending' | 'approved' | 'rejected';
+
+type LeaveRecord = {
+  _id: string;
+  leaveType: string;
+  startDate: string;
+  endDate: string;
+  totalDays: number;
+  reason: string;
+  status: LeaveStatus;
+  managerRemark?: string;
+  createdAt: string;
+};
 
 export default function LeaveHistoryPage() {
-  const [filter, setFilter] = useState('all');
-  const leaves = mockLeaveRequests.filter(l => filter === 'all' || l.status === filter);
+  const [filter, setFilter] = useState<'all' | LeaveStatus>('all');
+  const [leaves, setLeaves] = useState<LeaveRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const user = useSelector((state: any) => state.auth.user);
+  const socket = useSocket();
+
+  const fetchLeaves = async () => {
+    if (!user?.id) {
+      setLeaves([]);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const res = await api.get(`/leave/my/${user.id}`);
+      setLeaves(res.data.leaves ?? []);
+    } catch (err) {
+      setLeaves([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLeaves();
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!socket || !user?.id) return;
+
+    const handleLeaveStatusUpdated = () => {
+      fetchLeaves();
+    };
+
+    socket.on('leave_status_updated', handleLeaveStatusUpdated);
+
+    return () => {
+      socket.off('leave_status_updated', handleLeaveStatusUpdated);
+    };
+  }, [socket, user?.id]);
+
+  const visibleLeaves = leaves.filter(l => filter === 'all' || l.status === filter);
 
   return (
     <div className="space-y-5 max-w-4xl">
@@ -30,9 +86,9 @@ export default function LeaveHistoryPage() {
       {/* Summary */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: 'Pending', count: mockLeaveRequests.filter(l => l.status === 'pending').length, color: 'amber' },
-          { label: 'Approved', count: mockLeaveRequests.filter(l => l.status === 'approved').length, color: 'green' },
-          { label: 'Rejected', count: mockLeaveRequests.filter(l => l.status === 'rejected').length, color: 'red' },
+          { label: 'Pending', count: leaves.filter(l => l.status === 'pending').length, color: 'amber' },
+          { label: 'Approved', count: leaves.filter(l => l.status === 'approved').length, color: 'green' },
+          { label: 'Rejected', count: leaves.filter(l => l.status === 'rejected').length, color: 'red' },
         ].map(s => (
           <div key={s.label} className={cn("bg-card border rounded-xl p-4 text-center",
             s.color === 'amber' ? 'border-amber-500/20' : s.color === 'green' ? 'border-green-500/20' : 'border-red-500/20')}>
@@ -43,15 +99,17 @@ export default function LeaveHistoryPage() {
       </div>
 
       <div className="bg-card border border-border rounded-xl overflow-hidden">
-        {leaves.length === 0 ? (
+        {loading ? (
+          <div className="py-16 text-center text-sm text-muted-foreground">Loading leave history...</div>
+        ) : visibleLeaves.length === 0 ? (
           <div className="py-16 text-center">
             <CalendarDays className="w-10 h-10 mx-auto mb-3 text-muted-foreground opacity-40" />
             <p className="text-sm text-muted-foreground">No leave requests found.</p>
           </div>
         ) : (
           <div className="divide-y divide-border">
-            {leaves.map(l => (
-              <div key={l.id} className="p-4 hover:bg-muted/30 transition-colors">
+            {visibleLeaves.map(l => (
+              <div key={l._id} className="p-4 hover:bg-muted/30 transition-colors">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
@@ -61,9 +119,9 @@ export default function LeaveHistoryPage() {
                         l.status === 'rejected' ? 'bg-red-500/10 text-red-600 border-red-500/20' :
                         'bg-amber-500/10 text-amber-600 border-amber-500/20')}>{l.status}</Badge>
                     </div>
-                    <p className="text-xs text-muted-foreground">{l.startDate} → {l.endDate} · <strong>{l.days} days</strong></p>
+                    <p className="text-xs text-muted-foreground">{new Date(l.startDate).toLocaleDateString()} → {new Date(l.endDate).toLocaleDateString()} · <strong>{l.totalDays} days</strong></p>
                     <p className="text-xs text-muted-foreground mt-1 italic">"{l.reason}"</p>
-                    {l.approvalComments && <p className="text-xs text-primary mt-1">HR Comment: {l.approvalComments}</p>}
+                    {l.managerRemark && <p className="text-xs text-primary mt-1">HR Comment: {l.managerRemark}</p>}
                   </div>
                   <p className="text-[10px] text-muted-foreground shrink-0">{new Date(l.createdAt).toLocaleDateString()}</p>
                 </div>

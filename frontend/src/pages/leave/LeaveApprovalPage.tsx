@@ -1,7 +1,5 @@
-import { useState,useEffect } from 'react';
-import { Check, X, Eye, Clock, Users, CheckCheck } from 'lucide-react';
-import { mockLeaveRequests } from '@/constants/mockData';
-import type { LeaveRequest, LeaveStatus } from '@/types';
+import { useState, useEffect } from 'react';
+import { Check, X, Clock, CheckCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -13,6 +11,27 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import api from "@/utils/api";
 import { useSelector } from "react-redux";
+import { useSocket } from '@/context/SocketContext';
+
+type LeaveStatus = 'pending' | 'approved' | 'rejected';
+
+type LeaveRequest = {
+  _id: string;
+  employee?: {
+    name?: string;
+    firstName?: string;
+    lastName?: string;
+  };
+  department?: string;
+  leaveType: string;
+  startDate: string;
+  endDate: string;
+  totalDays: number;
+  reason: string;
+  status: LeaveStatus;
+  managerRemark?: string;
+  createdAt: string;
+};
 
 
 export default function LeaveApprovalPage() {
@@ -21,36 +40,46 @@ export default function LeaveApprovalPage() {
   const [comments, setComments] = useState('');
   const [action, setAction] = useState<'approve' | 'reject' | null>(null);
   const user = useSelector((state: any) => state.auth.user);
-const pending = leaves.filter(l => l.status === "pending");
-const approved = leaves.filter(l => l.status === "approved");
-const rejected = leaves.filter(l => l.status === "rejected");
+  const socket = useSocket();
+  const pending = leaves.filter(l => l.status === 'pending');
+  const approved = leaves.filter(l => l.status === 'approved');
+  const rejected = leaves.filter(l => l.status === 'rejected');
+
+  const fetchLeaves = async () => {
+    try {
+      const res = await api.get('/leave/all');
+      setLeaves(res.data.leaves ?? []);
+    } catch (err) {
+      console.log(err);
+    }
+  };
   
 
- const handleAction = async (
-  id: string,
-  status: "approved" | "rejected"
-) => {
-  try {
-    await api.put(`/leave/status/${id}`, {
-      status,
-      managerRemark: comments,
-      approvedBy: user._id, 
-    });
+  const handleAction = async (
+    id: string,
+    status: 'approved' | 'rejected'
+  ) => {
+    try {
+      await api.put(`/leave/status/${id}`, {
+        status,
+        managerRemark: comments,
+        approvedBy: user?.id ?? user?._id,
+      });
 
-    toast.success(`Leave ${status} successfully`);
+      toast.success(`Leave ${status} successfully`);
 
-    fetchLeaves();
+      fetchLeaves();
 
-    setSelected(null);
-    setComments("");
-    setAction(null);
-  } catch (err) {
-    toast.error("Something went wrong");
-  }
-};
+      setSelected(null);
+      setComments('');
+      setAction(null);
+    } catch (err) {
+      toast.error('Something went wrong');
+    }
+  };
   
 
-  const leaveBadge = (status: LeaveStatus) => cn("text-[10px] capitalize",
+  const leaveBadge = (status: LeaveStatus) => cn('text-[10px] capitalize',
     status === 'approved' ? 'bg-green-500/10 text-green-600 border-green-500/20' :
     status === 'rejected' ? 'bg-red-500/10 text-red-600 border-red-500/20' :
     'bg-amber-500/10 text-amber-600 border-amber-500/20');
@@ -99,19 +128,23 @@ const rejected = leaves.filter(l => l.status === "rejected");
 
 
   useEffect(() => {
-  fetchLeaves();
-}, []);
+    fetchLeaves();
 
-const fetchLeaves = async () => {
-  try {
-    const res = await api.get("/leave/all");
-    console.log(res.data);
+  }, []);
 
-    setLeaves(res.data.leaves);
-  } catch (err) {
-    console.log(err);
-  }
-};
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleLeaveListUpdated = () => {
+      fetchLeaves();
+    };
+
+    socket.on('leave_list_updated', handleLeaveListUpdated);
+
+    return () => {
+      socket.off('leave_list_updated', handleLeaveListUpdated);
+    };
+  }, [socket]);
 
 
   return (
