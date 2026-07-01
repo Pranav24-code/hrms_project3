@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import api from '@/utils/api';
 
 const statusConfig = {
   paid: { label: 'Paid', className: 'bg-green-500/10 text-green-600 border-green-500/20' },
@@ -19,6 +20,18 @@ export default function PayrollDashboardPage() {
   const navigate = useNavigate();
   const [monthFilter, setMonthFilter] = useState('all');
 
+  const handleProcessPayroll = async () => {
+    try {
+      await api.post('/notifications/payroll-paid', {
+        month: 'June',
+        year: '2026',
+      });
+      toast.success('Payroll processed and employee notifications sent');
+    } catch (err) {
+      toast.error('Failed to process payroll notifications');
+    }
+  };
+
   const totalPaid = mockPayroll.filter(p => p.status === 'paid').reduce((s, p) => s + p.netSalary, 0);
   const totalPending = mockPayroll.filter(p => p.status !== 'paid').length;
 
@@ -29,7 +42,7 @@ export default function PayrollDashboardPage() {
           <h1 className="text-xl font-bold" style={{ fontFamily: 'Sora, sans-serif' }}>Payroll</h1>
           <p className="text-sm text-muted-foreground">Manage and process employee payroll</p>
         </div>
-        <Button size="sm" className="h-8 gap-1.5 text-xs" onClick={() => toast.success('Payroll processing initiated (demo)')}>
+        <Button size="sm" className="h-8 gap-1.5 text-xs" onClick={handleProcessPayroll}>
           <DollarSign className="w-3.5 h-3.5" />Process Payroll
         </Button>
       </div>

@@ -1,12 +1,21 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Bell, Check, Trash2, DollarSign, CalendarDays, Megaphone, Settings } from 'lucide-react';
-import { mockNotifications } from '@/constants/mockData';
-import type { Notification } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useSelector } from 'react-redux';
 import { toast } from 'sonner';
+import api from '@/utils/api';
+import { useSocket } from '@/context/SocketContext';
+
+type NotificationItem = {
+  _id: string;
+  title: string;
+  message: string;
+  type: 'leave' | 'payroll' | 'announcement' | 'system';
+  createdAt: string;
+  read: boolean;
+};
 
 const typeConfig = {
   leave: { icon: CalendarDays, color: 'bg-blue-500/10 text-blue-500' },
@@ -25,27 +34,86 @@ function formatTime(iso: string) {
 
 export default function NotificationsPage() {
   const user = useSelector((state: any) => state.auth.user);
-  const [notifications, setNotifications] = useState(mockNotifications);
-  const [filter, setFilter] = useState<'all' | 'unread'>('all');
+  const socket = useSocket();
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all');
 
-  const displayed = filter === 'unread' ? notifications.filter(n => !n.read) : notifications;
+  const displayed = useMemo(() => {
+    if (filter === 'unread') return notifications.filter(n => !n.read);
+    if (filter === 'read') return notifications.filter(n => n.read);
+    return notifications;
+  }, [notifications, filter]);
+
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  const markRead = (id: string) => setNotifications(p => p.map(n => n.id === id ? { ...n, read: true } : n));
-  const markAllRead = () => setNotifications(p => p.map(n => ({ ...n, read: true })));
-  const deleteN = (id: string) => setNotifications(p => p.filter(n => n.id !== id));
+  const fetchNotifications = async () => {
+    if (!user?.id) return;
+    try {
+      const res = await api.get(`/notifications/user/${user.id}`);
+      setNotifications(res.data.notifications ?? []);
+    } catch (err) {
+      toast.error('Failed to load notifications');
+    }
+  };
 
-  const handleBroadcast = () => {
-    toast.success('Broadcast sent to all employees!');
-    const newN = {
-      id: Math.random().toString(),
-      title: 'Company Announcement',
-      message: 'New policy update available. Please check the portal.',
-      type: 'announcement' as const,
-      createdAt: new Date().toISOString(),
-      read: false
+  useEffect(() => {
+    fetchNotifications();
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleCreated = (notification: NotificationItem) => {
+      setNotifications((prev) => [notification, ...prev]);
     };
-    setNotifications([newN, ...notifications]);
+
+    socket.on('notification_created', handleCreated);
+
+    return () => {
+      socket.off('notification_created', handleCreated);
+    };
+  }, [socket]);
+
+  const markRead = async (id: string) => {
+    try {
+      await api.patch(`/notifications/${id}/read`);
+      setNotifications((prev) => prev.map((n) => (n._id === id ? { ...n, read: true } : n)));
+    } catch (err) {
+      toast.error('Failed to mark notification as read');
+    }
+  };
+
+  const markAllRead = async () => {
+    if (!user?.id) return;
+    try {
+      await api.patch(`/notifications/user/${user.id}/read-all`);
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    } catch (err) {
+      toast.error('Failed to mark all notifications as read');
+    }
+  };
+
+  const deleteN = async (id: string) => {
+    try {
+      await api.delete(`/notifications/${id}`);
+      setNotifications((prev) => prev.filter((n) => n._id !== id));
+    } catch (err) {
+      toast.error('Failed to delete notification');
+    }
+  };
+
+  const handleBroadcast = async () => {
+    try {
+      await api.post('/notifications/create', {
+        title: 'Company Announcement',
+        message: 'New policy update available. Please check the portal.',
+        type: 'announcement',
+        targetRole: 'Employee',
+      });
+      toast.success('Broadcast sent to all employees!');
+    } catch (err) {
+      toast.error('Failed to send broadcast');
+    }
   };
 
   return (
@@ -74,7 +142,7 @@ export default function NotificationsPage() {
 
       {/* Filter */}
       <div className="flex gap-2">
-        {(['all', 'unread'] as const).map(f => (
+        {(['all', 'unread', 'read'] as const).map(f => (
           <button key={f} onClick={() => setFilter(f)}
             className={cn("px-4 py-1.5 rounded-lg text-xs font-medium transition-all capitalize",
               filter === f ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground hover:bg-muted")}>
@@ -94,7 +162,7 @@ export default function NotificationsPage() {
             {displayed.map(n => {
               const { icon: Icon, color } = (typeConfig as any)[n.type] || { icon: Bell, color: 'bg-muted text-muted-foreground' };
               return (
-                <div key={n.id} className={cn("flex items-start gap-4 p-4 hover:bg-muted/20 transition-colors group", !n.read && "bg-primary/[0.02]")}>
+                <div key={n._id} className={cn("flex items-start gap-4 p-4 hover:bg-muted/20 transition-colors group", !n.read && "bg-primary/[0.02]")}>
                   <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5", color)}>
                     <Icon className="w-4 h-4" />
                   </div>
@@ -109,11 +177,11 @@ export default function NotificationsPage() {
                     <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{n.message}</p>
                     <div className="flex gap-2 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       {!n.read && (
-                        <button onClick={() => markRead(n.id)} className="text-[10px] text-primary hover:underline flex items-center gap-1">
+                        <button onClick={() => markRead(n._id)} className="text-[10px] text-primary hover:underline flex items-center gap-1">
                           <Check className="w-3 h-3" />Mark read
                         </button>
                       )}
-                      <button onClick={() => deleteN(n.id)} className="text-[10px] text-destructive hover:underline flex items-center gap-1">
+                      <button onClick={() => deleteN(n._id)} className="text-[10px] text-destructive hover:underline flex items-center gap-1">
                         <Trash2 className="w-3 h-3" />Delete
                       </button>
                     </div>

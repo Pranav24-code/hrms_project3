@@ -1,6 +1,7 @@
 import Leave from "../models/leave.model.js";
 import User from "../models/user.model.js"
 import { io, userSocketMap } from "../index.js";
+import { createNotification, notifyRoleUsers } from "../utils/notification.util.js";
 
 const emitLeaveListUpdateToManagers = async (payload) => {
   const managers = await User.find({ role: "Manager", isActive: true }).select("_id");
@@ -51,6 +52,18 @@ const user = await User.findById(employee)
       leaveId: leave._id,
       leaveType: leave.leaveType,
       message: "A new leave request was submitted.",
+    });
+
+    await notifyRoleUsers({
+      role: "Manager",
+      type: "leave",
+      title: "New Leave Request",
+      message: `${user.name} has submitted a ${leave.leaveType} leave request.`,
+      data: {
+        leaveId: leave._id,
+        employeeId: user._id,
+        employeeName: user.name,
+      },
     });
 
   res.status(201).json({
@@ -140,6 +153,18 @@ export const updateLeaveStatus = async (req, res) => {
         message: `Your ${leave.leaveType} leave request has been ${status}.`,
       });
     }
+
+    await createNotification({
+      recipient: leave.employee,
+      type: "leave",
+      title: `Leave ${status}`,
+      message: `Your ${leave.leaveType} leave request has been ${status}.`,
+      data: {
+        leaveId: leave._id,
+        status,
+        leaveType: leave.leaveType,
+      },
+    });
 
     await emitLeaveListUpdateToManagers({
       action: "status_changed",

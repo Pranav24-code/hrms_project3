@@ -19,21 +19,17 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 
     setSocket(socket);
 
-    // Listen for leave status updates
-    socket.on('leave_status_updated', (data: { status: string; leaveType: string; message: string }) => {
-      if (data.status === 'approved') {
-        toast.success(`✅ Leave ${data.status.charAt(0).toUpperCase() + data.status.slice(1)}`, {
-          description: data.message,
-        });
-      } else {
-        toast.error(`❌ Leave ${data.status.charAt(0).toUpperCase() + data.status.slice(1)}`, {
-          description: data.message,
-        });
-      }
+    socket.on('notification_created', (notification: { title: string; message: string; type: string }) => {
+      const isNegative = notification.type === 'system';
+      const show = isNegative ? toast.error : toast.success;
+
+      show(notification.title, {
+        description: notification.message,
+      });
     });
 
     return () => {
-      socket.off('leave_status_updated');
+      socket.off('notification_created');
       socket.disconnect();
       setSocket(null);
     };

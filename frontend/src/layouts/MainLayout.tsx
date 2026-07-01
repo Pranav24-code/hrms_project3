@@ -20,6 +20,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { cn } from '@/lib/utils';
 import { useSelector, useDispatch } from "react-redux";
 import { logoutUser } from "@/redux/slice/authslice";
+import api from '@/utils/api';
+import { useSocket } from '@/context/SocketContext';
 
 
 
@@ -218,12 +220,41 @@ function TopNavbar({ sidebarCollapsed, onMenuClick }: { sidebarCollapsed: boolea
   const dispatch = useDispatch();
 
 const user = useSelector((state: any) => state.auth.user);
+const socket = useSocket();
+const [unreadCount, setUnreadCount] = useState(0);
 
 const logout = () => {
   dispatch(logoutUser());
   navigate("/login");
 };
-  const unreadCount = 0;
+
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      if (!user?.id) return;
+      try {
+        const res = await api.get(`/notifications/user/${user.id}`);
+        setUnreadCount(res.data.unreadCount ?? 0);
+      } catch (err) {
+        setUnreadCount(0);
+      }
+    };
+
+    fetchUnreadCount();
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleCountChange = (payload: { unreadCount: number }) => {
+      setUnreadCount(payload.unreadCount ?? 0);
+    };
+
+    socket.on('notification_state_changed', handleCountChange);
+
+    return () => {
+      socket.off('notification_state_changed', handleCountChange);
+    };
+  }, [socket]);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDark);
