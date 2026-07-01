@@ -146,6 +146,11 @@ export default function LoginPage() {
             <Button type="submit" className="w-full h-10 font-semibold" disabled={loading}>
               {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Signing in...</> : 'Sign In'}
             </Button>
+            {role === "Employee" && (
+              <p className="text-center text-sm text-muted-foreground mt-4">
+                Don't have an account? <Link to="/signup" className="text-primary hover:underline font-medium">Sign up</Link>
+              </p>
+            )}
           </form>
         </div>
 
