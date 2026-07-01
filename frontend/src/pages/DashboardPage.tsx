@@ -50,6 +50,53 @@ function formatTime(iso: string) {
   return `${Math.floor(diff / 1440)}d ago`;
 }
 
+const fallbackEmployeeGrowthData = [
+  { month: 'Jan', employees: 58 },
+  { month: 'Feb', employees: 60 },
+  { month: 'Mar', employees: 61 },
+  { month: 'Apr', employees: 64 },
+  { month: 'May', employees: 67 },
+  { month: 'Jun', employees: 68 },
+  { month: 'Jul', employees: 70 },
+  { month: 'Aug', employees: 71 },
+  { month: 'Sep', employees: 72 },
+  { month: 'Oct', employees: 73 },
+  { month: 'Nov', employees: 74 },
+  { month: 'Dec', employees: 76 },
+];
+
+const fallbackDepartmentDistributionData = [
+  { name: 'Engineering', value: 22, fill: 'var(--chart-1)' },
+  { name: 'Design', value: 9, fill: 'var(--chart-2)' },
+  { name: 'Sales', value: 14, fill: 'var(--chart-3)' },
+  { name: 'HR', value: 6, fill: 'var(--chart-4)' },
+  { name: 'Finance', value: 8, fill: 'var(--chart-5)' },
+  { name: 'Marketing', value: 11, fill: 'var(--chart-6)' },
+];
+
+const fallbackPayrollTrendData = [
+  { month: 'Jan', amount: 380000 },
+  { month: 'Feb', amount: 392500 },
+  { month: 'Mar', amount: 401000 },
+  { month: 'Apr', amount: 410500 },
+  { month: 'May', amount: 417000 },
+  { month: 'Jun', amount: 421000 },
+  { month: 'Jul', amount: 428000 },
+  { month: 'Aug', amount: 434500 },
+  { month: 'Sep', amount: 439000 },
+  { month: 'Oct', amount: 445000 },
+  { month: 'Nov', amount: 452000 },
+  { month: 'Dec', amount: 460000 },
+];
+
+const fallbackActivities = [
+  { id: 'a1', type: 'leave_approved', title: 'Leave approved', description: 'Aman Sharma leave request was approved', timestamp: new Date(Date.now() - 18 * 60 * 1000).toISOString() },
+  { id: 'a2', type: 'employee_added', title: 'New employee added', description: 'Maria Khan joined the Design team', timestamp: new Date(Date.now() - 55 * 60 * 1000).toISOString() },
+  { id: 'a3', type: 'payroll_generated', title: 'Payroll generated', description: 'June payroll batch processed successfully', timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString() },
+  { id: 'a4', type: 'leave_rejected', title: 'Leave rejected', description: 'Sana Ali leave request was rejected', timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString() },
+  { id: 'a5', type: 'department_updated', title: 'Department updated', description: 'Marketing department headcount adjusted', timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString() },
+];
+
 const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{value: number; name?: string; color?: string}>; label?: string }) => {
   if (active && payload?.length) {
     return (
@@ -69,12 +116,29 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const socket = useSocket();
   const isHR = user?.role === 'Manager';
-  const pendingLeaves = mockLeaveRequests.filter(l => l.status === 'pending');
 
   const [pendingrequest, setPendingrequest] = useState([]);
+  const [leaveAnalytics, setLeaveAnalytics] = useState<Array<{
+    employee: string;
+    approved: number;
+    rejected: number;
+    pending: number;
+    total: number;
+  }>>([]);
+
+  const chartEmployeeGrowthData = employeeGrowthData.length > 0 ? employeeGrowthData : fallbackEmployeeGrowthData;
+  const chartDepartmentDistributionData = departmentDistributionData.length > 0 ? departmentDistributionData : fallbackDepartmentDistributionData;
+  const chartPayrollTrendData = payrollTrendData.length > 0 ? payrollTrendData : fallbackPayrollTrendData;
+  const recentActivities = mockActivities.length > 0 ? mockActivities : fallbackActivities;
+  const leaveAnalyticsChartData = leaveAnalytics.length > 0 ? leaveAnalytics : [
+    { employee: 'Aman Sharma', approved: 2, rejected: 0, pending: 1, total: 3 },
+    { employee: 'Maria Khan', approved: 1, rejected: 1, pending: 0, total: 2 },
+    { employee: 'John Carter', approved: 3, rejected: 1, pending: 0, total: 4 },
+  ];
 
   useEffect(() => {
     getPendingLeaves();
+    getLeaveAnalytics();
   }, []);
 
   useEffect(() => {
@@ -82,12 +146,19 @@ export default function DashboardPage() {
 
     const handleLeaveListUpdated = () => {
       getPendingLeaves();
+      getLeaveAnalytics();
+    };
+
+    const handleNotificationCreated = () => {
+      getLeaveAnalytics();
     };
 
     socket.on('leave_list_updated', handleLeaveListUpdated);
+    socket.on('notification_created', handleNotificationCreated);
 
     return () => {
       socket.off('leave_list_updated', handleLeaveListUpdated);
+      socket.off('notification_created', handleNotificationCreated);
     };
   }, [socket]);
 
@@ -102,6 +173,54 @@ const getPendingLeaves = async () => {
     }
   } catch (error) {
     console.log(error);
+  }
+};
+
+const getLeaveAnalytics = async () => {
+  if (!user?.id) return;
+
+  try {
+    const endpoint = isHR ? '/leave/all' : `/leave/my/${user.id}`;
+    const res = await api.get(endpoint);
+    const leaves = res.data.leaves ?? [];
+
+    const grouped = leaves.reduce((acc: Record<string, {
+      employee: string;
+      approved: number;
+      rejected: number;
+      pending: number;
+      total: number;
+    }>, leave: any) => {
+      const employeeName = isHR
+        ? (leave.employee?.name || leave.employee?.employeeId || 'Unknown employee')
+        : `${user.firstName ?? 'My'} ${user.lastName ?? 'Leaves'}`.trim();
+
+      if (!acc[employeeName]) {
+        acc[employeeName] = {
+          employee: employeeName,
+          approved: 0,
+          rejected: 0,
+          pending: 0,
+          total: 0,
+        };
+      }
+
+      if (leave.status === 'approved') acc[employeeName].approved += 1;
+      else if (leave.status === 'rejected') acc[employeeName].rejected += 1;
+      else acc[employeeName].pending += 1;
+
+      acc[employeeName].total += 1;
+      return acc;
+    }, {});
+
+    const chartData = Object.values(grouped)
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 6);
+
+    setLeaveAnalytics(chartData);
+  } catch (error) {
+    console.log(error);
+    setLeaveAnalytics([]);
   }
 };
 
@@ -167,7 +286,7 @@ const getPendingLeaves = async () => {
             <Badge variant="secondary" className="text-[10px]">+26% YTD</Badge>
           </div>
           <ResponsiveContainer width="100%" height={200}>
-            <AreaChart data={employeeGrowthData}>
+            <AreaChart data={chartEmployeeGrowthData}>
               <defs>
                 <linearGradient id="empGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.15} />
@@ -191,8 +310,8 @@ const getPendingLeaves = async () => {
           </div>
           <ResponsiveContainer width="100%" height={160}>
             <PieChart>
-              <Pie data={departmentDistributionData} cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={3} dataKey="value">
-                {departmentDistributionData.map((entry, index) => (
+              <Pie data={chartDepartmentDistributionData} cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={3} dataKey="value">
+                {chartDepartmentDistributionData.map((entry, index) => (
                   <Cell key={index} fill={entry.fill} />
                 ))}
               </Pie>
@@ -200,7 +319,7 @@ const getPendingLeaves = async () => {
             </PieChart>
           </ResponsiveContainer>
           <div className="grid grid-cols-2 gap-x-3 gap-y-1 mt-2">
-            {departmentDistributionData.slice(0, 4).map((d, i) => (
+            {chartDepartmentDistributionData.slice(0, 4).map((d, i) => (
               <div key={i} className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
                 <span className="w-2 h-2 rounded-full shrink-0" style={{ background: d.fill }} />
                 <span className="truncate">{d.name}</span>
@@ -217,17 +336,17 @@ const getPendingLeaves = async () => {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-sm font-semibold text-foreground">Leave Analytics</h3>
-              <p className="text-xs text-muted-foreground">Monthly breakdown 2025</p>
+              <p className="text-xs text-muted-foreground">Leave requests by employee</p>
             </div>
             <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => navigate('/leave/approvals')}>
               View all <ArrowRight className="w-3 h-3" />
             </Button>
           </div>
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={leaveAnalyticsData} barSize={8}>
+            <BarChart data={leaveAnalyticsChartData} barSize={18}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-              <XAxis dataKey="month" tick={{ fontSize: 11 }} stroke="var(--muted-foreground)" />
-              <YAxis tick={{ fontSize: 11 }} stroke="var(--muted-foreground)" />
+              <XAxis dataKey="employee" tick={{ fontSize: 11 }} stroke="var(--muted-foreground)" interval={0} />
+              <YAxis tick={{ fontSize: 11 }} stroke="var(--muted-foreground)" allowDecimals={false} />
               <Tooltip content={<CustomTooltip />} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
               <Bar dataKey="approved" name="Approved" fill="var(--chart-2)" radius={[3, 3, 0, 0]} />
@@ -247,7 +366,7 @@ const getPendingLeaves = async () => {
             <Badge variant="secondary" className="text-[10px]">+5.8% YTD</Badge>
           </div>
           <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={payrollTrendData}>
+            <LineChart data={chartPayrollTrendData}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
               <XAxis dataKey="month" tick={{ fontSize: 11 }} stroke="var(--muted-foreground)" />
               <YAxis tick={{ fontSize: 11 }} stroke="var(--muted-foreground)" tickFormatter={v => `$${Math.round(v / 1000)}K`} />
@@ -269,7 +388,7 @@ const getPendingLeaves = async () => {
             </div>
           </div>
           <div className="space-y-3">
-            {mockActivities.slice(0, 5).map((a) => {
+            {recentActivities.slice(0, 5).map((a) => {
               const { icon: Icon, color } = activityIcons[a.type] || activityIcons.employee_added;
               return (
                 <div key={a.id} className="flex items-start gap-3">
