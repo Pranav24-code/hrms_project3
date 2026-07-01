@@ -12,8 +12,8 @@ import api from "@/utils/api";
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('hr@nexahr.com');
-  const [password, setPassword] = useState('Admin@123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -83,8 +83,6 @@ export default function LoginPage() {
               type="button"
               onClick={() => {
                 setRole("Manager");
-                setEmail("hr@nexahr.com");
-                setPassword("Admin@123");
               }}
               className={`flex-1 text-xs py-1.5 px-3 rounded-lg border transition-all font-medium ${
                 role === "Manager"
@@ -99,8 +97,6 @@ export default function LoginPage() {
               type="button"
               onClick={() => {
                 setRole("Employee");
-                setEmail("employee@nexahr.com");
-                setPassword("Admin@123");
               }}
               className={`flex-1 text-xs py-1.5 px-3 rounded-lg border transition-all font-medium ${
                 role === "Employee"
@@ -111,7 +107,7 @@ export default function LoginPage() {
               👨‍💼 Employee
             </button>
           </div>
-          <p className="text-[10px] text-muted-foreground font-mono text-center mb-5 -mt-2">← Click to auto-fill credentials</p>
+
 
           {error && (
             <div className="flex items-center gap-2 text-destructive text-sm bg-destructive/10 border border-destructive/20 rounded-lg p-3 mb-5">

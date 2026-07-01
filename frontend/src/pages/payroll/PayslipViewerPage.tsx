@@ -11,6 +11,16 @@ export default function PayslipViewerPage() {
   const navigate = useNavigate();
   const payroll = mockPayroll.find(p => p.id === id) || mockPayroll[0];
 
+  if (!payroll) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20">
+        <h2 className="text-xl font-bold mb-2">Payslip Not Found</h2>
+        <p className="text-muted-foreground mb-4">The payslip you are looking for does not exist or has been removed.</p>
+        <Button onClick={() => navigate('/payroll')}>Return to Payroll</Button>
+      </div>
+    );
+  }
+
   const rows = [
     { label: 'Basic Salary', earn: payroll.basicSalary, ded: 0 },
     { label: 'House Rent Allowance (HRA)', earn: payroll.hra, ded: 0 },
