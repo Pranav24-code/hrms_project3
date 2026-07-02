@@ -5,6 +5,7 @@ import {
   getTodayAttendance,
   getEmployeeAttendance,
   getAttendanceStats,
+  getAttendanceHistory,
   getTodayEmployeeAttendance
 } from "../controllers/attendance.controller.js";
 
@@ -14,6 +15,7 @@ router.post("/checkin", checkIn);
 router.post("/checkout", checkOut);
 
 router.get("/today", getTodayAttendance);
+router.get("/history", getAttendanceHistory);
 router.get("/employee/:id", getEmployeeAttendance);
 router.get("/stats", getAttendanceStats);
 

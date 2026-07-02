@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
-import { UserCheck, UserX, Clock, AlertCircle, LogIn, LogOut, Eye } from 'lucide-react';
+import { UserCheck, UserX, Clock, AlertCircle, LogIn, LogOut, Eye, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useSelector } from "react-redux";
 import api from "@/utils/api";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import * as XLSX from 'xlsx';
 
 type AttendanceSession = {
   checkIn: string;
@@ -17,8 +18,11 @@ type AttendanceSession = {
 
 type AttendanceRecord = {
   _id: string;
+  date?: string;
   employee?: {
     name?: string;
+    email?: string;
+    employeeId?: string;
   };
   checkIn?: string | null;
   checkOut?: string | null;
@@ -40,6 +44,8 @@ export default function AttendancePage() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [checkedIn, setCheckedIn] = useState(false);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
+  const [history, setHistory] = useState<AttendanceRecord[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [selectedAttendance, setSelectedAttendance] = useState<AttendanceRecord | null>(null);
 const [stats, setStats] = useState({
   present: 0,
@@ -73,6 +79,7 @@ const handleAction = async () => {
 
     fetchAttendance();
     fetchStats();
+    fetchHistory();
   } catch (error: any) {
     toast.error(
       error?.response?.data?.message ||
@@ -89,6 +96,7 @@ const onLeave = stats.onLeave;
  useEffect(() => {
   fetchAttendance();
   fetchStats();
+  fetchHistory();
 
   if (user?.id) {
     checkTodayStatus();
@@ -129,12 +137,41 @@ const fetchAttendance = async () => {
   }
 };
 
+const fetchHistory = async () => {
+  if (!user?.id) return;
+
+  try {
+    setHistoryLoading(true);
+
+    const endpoint = user?.role === 'Manager'
+      ? '/attendance/history'
+      : `/attendance/history?employeeId=${user.id}`;
+
+    const res = await api.get(endpoint);
+    setHistory(res.data.attendance ?? []);
+  } catch (error) {
+    console.error(error);
+    toast.error('Failed to load attendance history');
+  } finally {
+    setHistoryLoading(false);
+  }
+};
+
 const formatTime = (iso?: string | null) => {
   if (!iso) return '—';
   return new Date(iso).toLocaleTimeString([], {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
+  });
+};
+
+const formatDate = (iso?: string) => {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString([], {
+    year: 'numeric',
+    month: 'short',
+    day: '2-digit',
   });
 };
 
@@ -161,6 +198,46 @@ const fetchStats = async () => {
   } catch (error) {
     console.error(error);
   }
+};
+
+const getHistoryRows = () => {
+  return history.flatMap((record) => {
+    const sessions = record.sessions?.length
+      ? record.sessions
+      : [{ checkIn: record.checkIn ?? '', checkOut: record.checkOut ?? null, workingHours: record.workingHours ?? 0 }];
+
+    return sessions.map((session, index) => ({
+      Date: formatDate(record.date),
+      Employee: record.employee?.name || '—',
+      EmployeeId: record.employee?.employeeId || '—',
+      Email: record.employee?.email || '—',
+      Status: statusConfig[record.status]?.label || record.status,
+      Session: index + 1,
+      CheckIn: formatTime(session.checkIn),
+      CheckOut: formatTime(session.checkOut),
+      WorkingHours: formatSessionHours(session),
+    }));
+  });
+};
+
+const handleDownloadHistory = () => {
+  const rows = getHistoryRows();
+
+  if (rows.length === 0) {
+    toast.error('No attendance history available to export');
+    return;
+  }
+
+  const worksheet = XLSX.utils.json_to_sheet(rows);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Attendance History');
+
+  const fileName = user?.role === 'Manager'
+    ? 'team-attendance-history'
+    : 'my-attendance-history';
+
+  XLSX.writeFile(workbook, `${fileName}.xlsx`);
+  toast.success('Attendance history downloaded');
 };
 
   return (
@@ -212,6 +289,75 @@ const fetchStats = async () => {
             </div>
           );
         })}
+      </div>
+
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
+        <div className="px-5 py-4 border-b border-border flex items-center justify-between gap-3">
+          <div>
+            <h3 className="text-sm font-semibold">Attendance History</h3>
+            <p className="text-xs text-muted-foreground">
+              {user?.role === 'Manager' ? 'All employee sessions' : 'Your full check-in and check-out history'}
+            </p>
+          </div>
+          <Button variant="outline" size="sm" className="gap-2" onClick={handleDownloadHistory} disabled={historyLoading}>
+            <Download className="w-3.5 h-3.5" />
+            Download Excel
+          </Button>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border bg-muted/40">
+                {['Date', 'Employee', 'Employee ID', 'Check-In', 'Check-Out', 'Working Hours', 'Sessions', 'Status', 'Actions'].map(h => (
+                  <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {historyLoading ? (
+                <tr>
+                  <td colSpan={9} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                    Loading attendance history...
+                  </td>
+                </tr>
+              ) : history.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                    No attendance history found.
+                  </td>
+                </tr>
+              ) : (
+                history.map((record) => (
+                  <tr key={record._id} className="hover:bg-muted/30 transition-colors">
+                    <td className="px-4 py-3 text-xs font-mono">{formatDate(record.date)}</td>
+                    <td className="px-4 py-3 text-xs font-medium">{record.employee?.name || '—'}</td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground">{record.employee?.employeeId || '—'}</td>
+                    <td className="px-4 py-3 text-xs font-mono">{formatTime(record.checkIn)}</td>
+                    <td className="px-4 py-3 text-xs font-mono">{formatTime(record.checkOut)}</td>
+                    <td className="px-4 py-3 text-xs font-mono">{typeof record.workingHours === 'number' ? `${record.workingHours.toFixed(2)}h` : '—'}</td>
+                    <td className="px-4 py-3 text-xs font-mono">{record.sessions?.length ?? 0}</td>
+                    <td className="px-4 py-3">
+                      <Badge variant="outline" className={cn("text-[10px]", statusConfig[record.status].className)}>
+                        {statusConfig[record.status].label}
+                      </Badge>
+                    </td>
+                    <td className="px-4 py-3">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-xs gap-1.5"
+                        onClick={() => setSelectedAttendance(record)}
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        Session History
+                      </Button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Attendance Table */}

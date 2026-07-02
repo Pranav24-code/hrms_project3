@@ -205,6 +205,29 @@ export const getTodayAttendance = async (req, res) => {
   }
 };
 
+export const getAttendanceHistory = async (req, res) => {
+  try {
+    const { employeeId } = req.query;
+
+    const filter = employeeId ? { employee: employeeId } : {};
+
+    const attendance = await Attendance.find(filter)
+      .populate("employee", "name email employeeId role")
+      .sort({ date: -1, createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: attendance.length,
+      attendance,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
+
 export const getEmployeeAttendance =
   async (req, res) => {
     try {
