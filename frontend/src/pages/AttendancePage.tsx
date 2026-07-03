@@ -189,7 +189,9 @@ const fetchStats = async () => {
                     <div className="flex items-center gap-2.5">
                       <Avatar className="h-7 w-7">
                         <AvatarFallback className="text-[10px] bg-primary/10 text-primary font-bold">
-                          {a.employee?.name}
+                          {a.employee?.name 
+                            ? a.employee.name.split(' ').map((n: any) => n[0]).join('') 
+                            : (a.employeeName ? a.employeeName.split(' ').map((n: any) => n[0]).join('') : 'E')}
                         </AvatarFallback>
                       </Avatar>
                       <span className="text-xs font-medium">{a.employeeName}</span>
