@@ -286,7 +286,9 @@ const logout = () => {
               <button className="flex items-center gap-2 pl-2 pr-1 py-1 rounded-lg hover:bg-accent transition-all ml-1">
                 <Avatar className="h-7 w-7">
                   <AvatarFallback className="bg-primary text-primary-foreground text-[11px] font-bold">
-                    {user.name}
+                    {user.firstName && user.lastName 
+                      ? `${user.firstName[0]}${user.lastName[0]}` 
+                      : (user.name?.charAt(0) || 'U')}
                   </AvatarFallback>
                 </Avatar>
                 <div className="hidden md:block text-left">

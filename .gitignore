@@ -99,3 +99,7 @@ Thumbs.db
 # --- Uploaded Files ---
 uploaded_files/
 
+# --- Local Databases ---
+mongodb-mem/data/
+
+
