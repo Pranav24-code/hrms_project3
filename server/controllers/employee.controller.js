@@ -114,12 +114,46 @@ export const addEmployee = async (req, res) => {
 
 export const getAllEmployee = async (req, res) => {
   try {
-    const employees = await Employee.find()
-      .populate({
-        path: "user",
-        select: "-password",   
-      })
-      .sort({ createdAt: -1 }); 
+    const users = await User.find({ employeeId: { $exists: true, $ne: null } })
+      .select("name email employeeId role isActive createdAt updatedAt")
+      .sort({ createdAt: -1 });
+
+    const profiles = await Employee.find().sort({ createdAt: -1 });
+    const profileByUserId = new Map(
+      profiles.map((profile) => [profile.user.toString(), profile])
+    );
+
+    const employees = users.map((user) => {
+      const profile = profileByUserId.get(user._id.toString());
+      const [firstName = "", ...restName] = (user.name || "").trim().split(/\s+/);
+      const lastNameFromUser = restName.join(" ");
+
+      return {
+        _id: user._id,
+        id: user._id,
+        user,
+        employeeId: user.employeeId,
+        role: user.role,
+        status: user.isActive ? "active" : "inactive",
+        isActive: user.isActive,
+        name: user.name,
+        email: user.email,
+        firstName: profile?.firstName || firstName || user.name || "",
+        lastName: profile?.lastName || lastNameFromUser,
+        department: profile?.department || "",
+        designation: profile?.designation || "",
+        joiningDate: profile?.joiningDate || null,
+        phone: profile?.phone || "",
+        dateOfBirth: profile?.dateOfBirth || null,
+        gender: profile?.gender || "",
+        address: profile?.address || "",
+        basicSalary: profile?.basicSalary || 0,
+        bonus: profile?.bonus || 0,
+        allowance: profile?.allowance || 0,
+        createdAt: user.createdAt,
+        updatedAt: profile?.updatedAt || user.updatedAt,
+      };
+    });
 
     res.status(200).json({
       success: true,

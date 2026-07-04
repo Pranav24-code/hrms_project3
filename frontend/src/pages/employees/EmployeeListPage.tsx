@@ -21,6 +21,24 @@ const statusConfig = {
   on_leave: { label: 'On Leave', className: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20' },
 };
 
+const getEmployeeName = (emp: any) => {
+  const firstName = emp.firstName?.trim();
+  const lastName = emp.lastName?.trim();
+  const combinedName = [firstName, lastName].filter(Boolean).join(' ').trim();
+
+  return combinedName || emp.name || emp.user?.name || 'Unnamed Employee';
+};
+
+const getEmployeeInitials = (emp: any) => {
+  const name = getEmployeeName(emp);
+  const parts = name.split(/\s+/).filter(Boolean);
+
+  if (parts.length === 0) return 'NA';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+
+  return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+};
+
 export default function EmployeeListPage() {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
@@ -51,7 +69,7 @@ const fetchEmployees = async () => {
 
 const filtered = employees.filter((e) => {
   const matchSearch =
-    `${e.firstName} ${e.lastName} ${e.user?.email} ${e.employeeId}`
+    `${getEmployeeName(e)} ${e.user?.email || e.email || ''} ${e.employeeId}`
       .toLowerCase()
       .includes(search.toLowerCase());
 
@@ -68,7 +86,7 @@ const filtered = employees.filter((e) => {
 
   const paginated = filtered.slice((page - 1) * perPage, page * perPage);
   const totalPages = Math.ceil(filtered.length / perPage);
-  const depts = [...new Set(employees.map((e) => e.department))];
+  const depts = [...new Set(employees.map((e) => e.department).filter(Boolean))];
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -178,18 +196,22 @@ const filtered = employees.filter((e) => {
                     <div className="flex items-center gap-3">
                       <Avatar className="h-8 w-8 shrink-0">
                         <AvatarFallback className="text-xs bg-primary/10 text-primary font-bold">
-                          {emp.firstName[0]}{emp.lastName[0]}
+                          {getEmployeeInitials(emp)}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="font-medium text-foreground text-sm">{emp.firstName} {emp.lastName}</p>
-                        <p className="text-[11px] text-muted-foreground" style={{ fontFamily: 'JetBrains Mono, monospace' }}>{emp.employeeId}</p>
+                        <p className="font-medium text-foreground text-sm">{getEmployeeName(emp)}</p>
+                        <p className="text-[11px] text-muted-foreground" style={{ fontFamily: 'JetBrains Mono, monospace' }}>{emp.employeeId || emp.user?.employeeId}</p>
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-3 hidden md:table-cell text-sm text-muted-foreground">{emp.department}</td>
-                  <td className="px-4 py-3 hidden lg:table-cell text-sm text-muted-foreground">{emp.designation}</td>
-                  <td className="px-4 py-3 hidden xl:table-cell text-sm text-muted-foreground">{new Date(emp.joiningDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</td>
+                  <td className="px-4 py-3 hidden md:table-cell text-sm text-muted-foreground">{emp.department || '—'}</td>
+                  <td className="px-4 py-3 hidden lg:table-cell text-sm text-muted-foreground">{emp.designation || '—'}</td>
+                  <td className="px-4 py-3 hidden xl:table-cell text-sm text-muted-foreground">
+                    {emp.joiningDate
+                      ? new Date(emp.joiningDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+                      : '—'}
+                  </td>
                   <td className="px-4 py-3">
                    <Badge
   variant="outline"
@@ -211,10 +233,10 @@ const filtered = employees.filter((e) => {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => navigate(`/employees/${emp.id}`)}><Eye className="w-4 h-4 mr-2" />View Details</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigate(`/employees/${emp.id || emp._id}`)}><Eye className="w-4 h-4 mr-2" />View Details</DropdownMenuItem>
                         <DropdownMenuItem><Edit className="w-4 h-4 mr-2" />Edit Employee</DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => toast.success(`${emp.firstName} removed (demo)`)}>
+                        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => toast.success(`${getEmployeeName(emp)} removed (demo)`) }>
                           <Trash2 className="w-4 h-4 mr-2" />Delete
                         </DropdownMenuItem>
                       </DropdownMenuContent>
