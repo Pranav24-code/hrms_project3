@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState,useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DollarSign, TrendingUp, Clock, CheckCheck, Eye, Download } from 'lucide-react';
 import { mockPayroll } from '@/constants/mockData';
@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import api from "@/utils/api";
 
 const statusConfig = {
   paid: { label: 'Paid', className: 'bg-green-500/10 text-green-600 border-green-500/20' },
@@ -18,9 +19,48 @@ const statusConfig = {
 export default function PayrollDashboardPage() {
   const navigate = useNavigate();
   const [monthFilter, setMonthFilter] = useState('all');
+  const [payrolls, setPayrolls] = useState([]);
+const [loading, setLoading] = useState(true);
 
   const totalPaid = mockPayroll.filter(p => p.status === 'paid').reduce((s, p) => s + p.netSalary, 0);
   const totalPending = mockPayroll.filter(p => p.status !== 'paid').length;
+
+
+  useEffect(() => {
+  fetchPayrolls();
+}, []);
+
+const fetchPayrolls = async () => {
+  try {
+    const res = await api.get("/payroll/all");
+       console.log(res.data);
+
+
+    if (res.data.success) {
+      setPayrolls(res.data.payrolls);
+    }
+  } catch (err) {
+    console.log(err);
+  } finally {
+    setLoading(false);
+  }
+};
+
+const handleGeneratePayroll = async () => {
+  try {
+    await api.post("/payroll/generate-all", {
+      month: 6,
+      year: 2026,
+    });
+
+    toast.success("Payroll Generated");
+
+    fetchPayrolls();
+
+  } catch (err) {
+    console.log(err);
+  }
+};
 
   return (
     <div className="space-y-5">
@@ -29,7 +69,7 @@ export default function PayrollDashboardPage() {
           <h1 className="text-xl font-bold" style={{ fontFamily: 'Sora, sans-serif' }}>Payroll</h1>
           <p className="text-sm text-muted-foreground">Manage and process employee payroll</p>
         </div>
-        <Button size="sm" className="h-8 gap-1.5 text-xs" onClick={() => toast.success('Payroll processing initiated (demo)')}>
+        <Button size="sm"   onClick={handleGeneratePayroll} className="h-8 gap-1.5 text-xs" >
           <DollarSign className="w-3.5 h-3.5" />Process Payroll
         </Button>
       </div>
@@ -76,34 +116,62 @@ export default function PayrollDashboardPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {mockPayroll.map(p => (
-                <tr key={p.id} className="hover:bg-muted/30 transition-colors">
+              {payrolls.map(p => (
+                <tr key={p._id} className="hover:bg-muted/30 transition-colors">
                   <td className="px-4 py-3">
-                    <div className="flex items-center gap-2.5">
-                      <Avatar className="h-7 w-7">
-                        <AvatarFallback className="text-[10px] bg-primary/10 text-primary font-bold">
-                          {p.employeeName.split(' ').map(n => n[0]).join('')}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="text-xs font-medium">{p.employeeName}</p>
-                        <p className="text-[10px] text-muted-foreground">{p.designation}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-xs font-mono">${p.basicSalary.toLocaleString()}</td>
-                  <td className="px-4 py-3 text-xs font-mono text-muted-foreground">${p.hra.toLocaleString()}</td>
-                  <td className="px-4 py-3 text-xs font-mono text-green-600">+${p.bonus.toLocaleString()}</td>
-                  <td className="px-4 py-3 text-xs font-mono text-red-500">-${p.deductions.toLocaleString()}</td>
-                  <td className="px-4 py-3 text-xs font-mono text-red-500">-${p.tax.toLocaleString()}</td>
-                  <td className="px-4 py-3 text-xs font-bold font-mono">${p.netSalary.toLocaleString()}</td>
+  <div className="flex items-center gap-2.5">
+    <Avatar className="h-7 w-7">
+      <AvatarFallback>
+        {p.employee?.name
+          ?.split(" ")
+          .map((n) => n[0])
+          .join("")}
+      </AvatarFallback>
+    </Avatar>
+
+    <div>
+      <p className="text-xs font-medium">
+        {p.employee?.username}
+      </p>
+
+      <p className="text-[10px] text-muted-foreground">
+        {p.employeeId}
+      </p>
+    </div>
+  </div>
+</td>
+                 
+
+<td className="px-4 py-3 text-xs font-mono">
+  ₹{p.basicSalary.toLocaleString()}
+</td>
+
+<td className="px-4 py-3 text-xs font-mono">
+  ₹{p.hra.toLocaleString()}
+</td>
+
+<td className="px-4 py-3 text-xs font-mono">
+  ₹{p.bonus.toLocaleString()}
+</td>
+
+<td className="px-4 py-3 text-xs font-mono">
+  ₹{p.deductions.toLocaleString()}
+</td>
+
+<td className="px-4 py-3 text-xs font-mono">
+  ₹{p.tax.toLocaleString()}
+</td>
+
+<td className="px-4 py-3 text-xs font-bold">
+  ₹{p.netSalary.toLocaleString()}
+</td>
                   <td className="px-4 py-3">
                     <Badge variant="outline" className={cn("text-[10px]", statusConfig[p.status].className)}>
                       {statusConfig[p.status].label}
                     </Badge>
                   </td>
                   <td className="px-4 py-3">
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => navigate(`/payroll/payslip/${p.id}`)}>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => navigate(`/payroll/payslip/${p._id}`)}>
                       <Eye className="w-3.5 h-3.5" />
                     </Button>
                   </td>

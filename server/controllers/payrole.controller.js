@@ -115,3 +115,91 @@ export const generatePayroll = async (req, res) => {
     });
   }
 };
+
+export const getAllPayrolls = async (req, res) => {
+  try {
+    const payrolls = await Payroll.find()
+      .populate({
+        path: "employee",
+        select: "name email profilePicture",
+      })
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: payrolls.length,
+      payrolls,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const generateAllPayrolls = async (req, res) => {
+  try {
+    const { month, year } = req.body;
+
+    const employees = await Employee.find().populate("user");
+
+    for (const employee of employees) {
+      const exists = await Payroll.findOne({
+        employee: employee.user._id,
+        month,
+        year,
+      });
+
+      if (exists) continue;
+
+      const basicSalary = employee.basicSalary || 0;
+      const allowance = employee.allowance || 0;
+      const bonus = employee.bonus || 0;
+
+      const hra = basicSalary * 0.2;
+
+      const grossSalary =
+        basicSalary +
+        hra +
+        allowance +
+        bonus;
+
+      const tax = grossSalary * 0.1;
+
+      const deductions = 0;
+
+      const netSalary =
+        grossSalary -
+        tax -
+        deductions;
+
+      await Payroll.create({
+        employee: employee.user._id,
+        employeeId: employee.employeeId,
+        month,
+        year,
+        basicSalary,
+        hra,
+        allowance,
+        bonus,
+        tax,
+        deductions,
+        grossSalary,
+        netSalary,
+        status: "processed",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Payroll generated successfully",
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
