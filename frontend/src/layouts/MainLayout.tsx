@@ -36,7 +36,7 @@ const navItems = [
     ]
   },
   { label: 'Payroll', icon: DollarSign, path: '/payroll', roles: ['Manager'] },
-  { label: 'My Payslip', icon: FileText, path: '/payroll/payslip/p1', roles: ['Employee'] },
+  { label: 'My Payslip', icon: FileText, path: '/payroll/history', roles: ['Employee'] },
   { label: 'Attendance', icon: Clock, path: '/attendance', roles: ['Employee', 'Manager'] },
   { label: 'Document Center', icon: FolderOpen, path: '/documents', roles: ['Employee', 'Manager'] },
   { label: 'Company Calendar', icon: CalendarRange, path: '/calendar', roles: ['Employee', 'Manager'] },
