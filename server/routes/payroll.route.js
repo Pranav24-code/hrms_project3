@@ -6,6 +6,7 @@ import {
   getPayslipById,
   updatePayrollStatus,
   deletePayrollRecord,
+  getEmployeePayrollPreview,
 } from "../controllers/payroll.controller.js";
 import { verifyToken } from "../middleware/authmiddleware.js";
 
@@ -14,6 +15,7 @@ const router = express.Router();
 // Apply verifyToken middleware to all payroll routes
 router.use(verifyToken);
 
+router.get("/preview", getEmployeePayrollPreview);
 router.post("/process", processPayroll);
 router.get("/all", getAllPayroll);
 router.get("/my", getMyPayroll);

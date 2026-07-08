@@ -12,34 +12,149 @@ const getMonthName = (monthNumber) => {
   return months[monthNumber - 1] || monthNumber.toString();
 };
 
-export const processPayroll = async (req, res) => {
+// Helper to compute salary preview for one employee given attendance data
+const computeSalaryPreview = (emp, attendances, month, year) => {
+  let presentCount = 0;
+  let absentCount = 0;
+  let halfDayCount = 0;
+  let lateCount = 0;
+  let onLeaveCount = 0;
+  let totalWorkingHours = 0;
+
+  for (const att of attendances) {
+    if (att.status === "present") presentCount++;
+    else if (att.status === "absent") absentCount++;
+    else if (att.status === "half_day") halfDayCount++;
+    else if (att.status === "late") lateCount++;
+    else if (att.status === "on_leave") onLeaveCount++;
+    totalWorkingHours += att.workingHours || 0;
+  }
+
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const dailyRate = (emp.basicSalary || 0) / (daysInMonth || 30);
+  const leaveDeduction = Math.round(((absentCount * dailyRate) + (halfDayCount * 0.5 * dailyRate)) * 100) / 100;
+
+  const basicSalary = emp.basicSalary || 0;
+  const allowance = emp.allowance || 0;
+  const bonus = emp.bonus || 0;
+  const hra = Math.round((basicSalary * 0.4) * 100) / 100;
+  const grossSalary = basicSalary + hra + allowance + bonus;
+  const pf = Math.round((basicSalary * 0.12) * 100) / 100;
+  const tax = Math.round((grossSalary * 0.1) * 100) / 100;
+  const deductions = Math.round((pf + tax + leaveDeduction) * 100) / 100;
+  const netSalary = Math.max(0, Math.round((grossSalary - deductions) * 100) / 100);
+
+  return {
+    presentCount,
+    absentCount,
+    halfDayCount,
+    lateCount,
+    onLeaveCount,
+    totalWorkingHours: Math.round(totalWorkingHours * 100) / 100,
+    totalAttendanceDays: attendances.length,
+    daysInMonth,
+    basicSalary,
+    hra,
+    allowance,
+    bonus,
+    leaveDeduction,
+    pf,
+    tax,
+    deductions,
+    grossSalary,
+    netSalary,
+  };
+};
+
+// GET /api/payroll/preview?month=X&year=Y
+// Returns all employees with their attendance stats + salary preview for the month
+export const getEmployeePayrollPreview = async (req, res) => {
   try {
     if (req.user.role !== "Manager") {
-      return res.status(403).json({
-        success: false,
-        message: "Forbidden - Manager access required",
-      });
+      return res.status(403).json({ success: false, message: "Forbidden - Manager access required" });
     }
 
-    const { month, year } = req.body;
-
+    const { month, year } = req.query;
     if (!month || !year) {
-      return res.status(400).json({
-        success: false,
-        message: "Month and Year are required",
-      });
+      return res.status(400).json({ success: false, message: "month and year query params are required" });
     }
 
-    // Get all employee profiles
     const employees = await Employee.find().populate("user");
+    const startDate = new Date(Number(year), Number(month) - 1, 1);
+    const endDate = new Date(Number(year), Number(month), 1);
 
-    let processedCount = 0;
-    let skippedCount = 0;
+    const result = [];
 
     for (const emp of employees) {
       if (!emp.user) continue;
 
-      // Check if payroll already exists for this employee, month, and year
+      const attendances = await Attendance.find({
+        employee: emp.user._id,
+        date: { $gte: startDate, $lt: endDate },
+      });
+
+      const alreadyProcessed = await Payroll.findOne({
+        employee: emp.user._id,
+        month: Number(month),
+        year: Number(year),
+      });
+
+      const preview = computeSalaryPreview(emp, attendances, Number(month), Number(year));
+
+      result.push({
+        userId: emp.user._id,
+        employeeId: emp.employeeId,
+        name: emp.user.name,
+        email: emp.user.email,
+        department: emp.department || "N/A",
+        designation: emp.designation || "N/A",
+        alreadyProcessed: !!alreadyProcessed,
+        ...preview,
+      });
+    }
+
+    return res.status(200).json({ success: true, employees: result });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// POST /api/payroll/process
+// Now supports selective processing: body can include `selections` array with per-employee overrides
+// selections: [{ userId, bonusOverride, extraDeduction }]
+// If `selections` is omitted, all employees are processed with defaults.
+export const processPayroll = async (req, res) => {
+  try {
+    if (req.user.role !== "Manager") {
+      return res.status(403).json({ success: false, message: "Forbidden - Manager access required" });
+    }
+
+    const { month, year, selections } = req.body;
+
+    if (!month || !year) {
+      return res.status(400).json({ success: false, message: "Month and Year are required" });
+    }
+
+    const employees = await Employee.find().populate("user");
+    let processedCount = 0;
+    let skippedCount = 0;
+
+    // Build a map of userId -> override if selections provided
+    const overrideMap = new Map();
+    if (Array.isArray(selections)) {
+      for (const sel of selections) {
+        overrideMap.set(sel.userId, sel);
+      }
+    }
+
+    for (const emp of employees) {
+      if (!emp.user) continue;
+
+      // If selections were provided, skip employees not in the list
+      if (selections && !overrideMap.has(emp.user._id.toString())) {
+        continue;
+      }
+
       const existing = await Payroll.findOne({
         employee: emp.user._id,
         month: Number(month),
@@ -51,10 +166,8 @@ export const processPayroll = async (req, res) => {
         continue;
       }
 
-      // Fetch attendance logs for this employee for the given month/year
-      // Month parameter is 1-12, so start of month is month-1, 1st day.
-      const startDate = new Date(year, month - 1, 1);
-      const endDate = new Date(year, month, 1); // 1st of next month
+      const startDate = new Date(Number(year), Number(month) - 1, 1);
+      const endDate = new Date(Number(year), Number(month), 1);
 
       const attendances = await Attendance.find({
         employee: emp.user._id,
@@ -63,35 +176,27 @@ export const processPayroll = async (req, res) => {
 
       let absentCount = 0;
       let halfDayCount = 0;
-
       for (const att of attendances) {
-        if (att.status === "absent") {
-          absentCount++;
-        } else if (att.status === "half_day") {
-          halfDayCount++;
-        }
+        if (att.status === "absent") absentCount++;
+        else if (att.status === "half_day") halfDayCount++;
       }
 
-      // Days in the given month
-      const daysInMonth = new Date(year, month, 0).getDate();
-      const dailyRate = emp.basicSalary / (daysInMonth || 30);
-
-      // Leave deductions: 1 day salary for absent, 0.5 day for half_day
+      const daysInMonth = new Date(Number(year), Number(month), 0).getDate();
+      const dailyRate = (emp.basicSalary || 0) / (daysInMonth || 30);
       const leaveDeduction = Math.round(((absentCount * dailyRate) + (halfDayCount * 0.5 * dailyRate)) * 100) / 100;
+
+      const override = overrideMap.get(emp.user._id.toString()) || {};
 
       const basicSalary = emp.basicSalary || 0;
       const allowance = emp.allowance || 0;
-      const bonus = emp.bonus || 0;
-      const hra = Math.round((basicSalary * 0.4) * 100) / 100; // 40% HRA
-
+      // Manager can override bonus and add an extra deduction
+      const bonus = override.bonusOverride !== undefined ? Number(override.bonusOverride) : (emp.bonus || 0);
+      const extraDeduction = override.extraDeduction !== undefined ? Number(override.extraDeduction) : 0;
+      const hra = Math.round((basicSalary * 0.4) * 100) / 100;
       const grossSalary = basicSalary + hra + allowance + bonus;
-
-      // PF (12% of basic)
       const pf = Math.round((basicSalary * 0.12) * 100) / 100;
-      // Tax (10% of gross)
       const tax = Math.round((grossSalary * 0.1) * 100) / 100;
-
-      const deductions = Math.round((pf + tax + leaveDeduction) * 100) / 100;
+      const deductions = Math.round((pf + tax + leaveDeduction + extraDeduction) * 100) / 100;
       const netSalary = Math.max(0, Math.round((grossSalary - deductions) * 100) / 100);
 
       await Payroll.create({
@@ -122,10 +227,7 @@ export const processPayroll = async (req, res) => {
       skippedCount,
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
 

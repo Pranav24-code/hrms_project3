@@ -1,41 +1,99 @@
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Download, Printer, Briefcase } from 'lucide-react';
-import { mockPayroll } from '@/constants/mockData';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import api from '@/utils/api';
+
+type PayrollRecord = {
+  _id: string;
+  id: string;
+  employee: string;
+  employeeId: string;
+  employeeName: string;
+  email: string;
+  department: string;
+  designation: string;
+  month: string;
+  monthVal: number;
+  year: number;
+  basicSalary: number;
+  hra: number;
+  allowance: number;
+  bonus: number;
+  tax: number;
+  deductions: number;
+  leaveDeduction: number;
+  grossSalary: number;
+  netSalary: number;
+  status: 'pending' | 'processed' | 'paid';
+  paidDate?: string;
+};
 
 export default function PayslipViewerPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const payroll = mockPayroll.find(p => p.id === id) || mockPayroll[0];
+  const [payroll, setPayroll] = useState<PayrollRecord | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchPayslip = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get(`/payroll/payslip/${id}`);
+      setPayroll(res.data.payroll);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to load payslip');
+      setPayroll(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (id) {
+      fetchPayslip();
+    }
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20">
+        <p className="text-muted-foreground animate-pulse">Loading payslip details...</p>
+      </div>
+    );
+  }
 
   if (!payroll) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
         <h2 className="text-xl font-bold mb-2">Payslip Not Found</h2>
-        <p className="text-muted-foreground mb-4">The payslip you are looking for does not exist or has been removed.</p>
-        <Button onClick={() => navigate('/payroll')}>Return to Payroll</Button>
+        <p className="text-muted-foreground mb-4">The payslip you are looking for does not exist or you do not have permission to view it.</p>
+        <Button onClick={() => navigate(-1)}>Go Back</Button>
       </div>
     );
   }
 
+  const pf = Math.round((payroll.basicSalary * 0.12) * 100) / 100;
   const rows = [
     { label: 'Basic Salary', earn: payroll.basicSalary, ded: 0 },
     { label: 'House Rent Allowance (HRA)', earn: payroll.hra, ded: 0 },
     { label: 'Performance Bonus', earn: payroll.bonus, ded: 0 },
-    { label: 'Provident Fund (PF)', earn: 0, ded: payroll.deductions },
+    { label: 'Other Allowances', earn: payroll.allowance, ded: 0 },
+    { label: 'Provident Fund (PF)', earn: 0, ded: pf },
     { label: 'Income Tax (TDS)', earn: 0, ded: payroll.tax },
+    { label: 'Leave Deductions (Absence/Half-Day)', earn: 0, ded: payroll.leaveDeduction },
   ];
+
   const grossEarnings = rows.reduce((s, r) => s + r.earn, 0);
   const totalDed = rows.reduce((s, r) => s + r.ded, 0);
 
   return (
     <div className="max-w-2xl mx-auto space-y-4">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="sm" className="gap-1.5 h-8 text-xs" onClick={() => navigate('/payroll')}>
-          <ArrowLeft className="w-3.5 h-3.5" />Payroll
+        <Button variant="ghost" size="sm" className="gap-1.5 h-8 text-xs" onClick={() => navigate(-1)}>
+          <ArrowLeft className="w-3.5 h-3.5" />Back
         </Button>
       </div>
 
@@ -45,7 +103,7 @@ export default function PayslipViewerPage() {
           <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5" onClick={() => { window.print(); }}>
             <Printer className="w-3.5 h-3.5" />Print
           </Button>
-          <Button size="sm" className="h-8 text-xs gap-1.5" onClick={() => toast.success('Payslip downloaded (demo)')}>
+          <Button size="sm" className="h-8 text-xs gap-1.5" onClick={() => { window.print(); }}>
             <Download className="w-3.5 h-3.5" />Download PDF
           </Button>
         </div>
@@ -77,10 +135,12 @@ export default function PayslipViewerPage() {
         <div className="px-6 py-4 bg-muted/30 border-b border-border">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: 'Employee', value: payroll.employeeName },
+              { label: 'Employee ID', value: payroll.employeeId },
+              { label: 'Employee Name', value: payroll.employeeName },
               { label: 'Department', value: payroll.department },
               { label: 'Designation', value: payroll.designation },
               { label: 'Pay Period', value: `${payroll.month} ${payroll.year}` },
+              { label: 'Payment Date', value: payroll.paidDate ? new Date(payroll.paidDate).toLocaleDateString() : 'Pending' },
             ].map(({ label, value }) => (
               <div key={label}>
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</p>

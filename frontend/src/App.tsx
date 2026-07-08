@@ -20,6 +20,7 @@ import LeaveHistoryPage from "@/pages/leave/LeaveHistoryPage";
 import LeaveApprovalPage from "@/pages/leave/LeaveApprovalPage";
 import PayrollDashboardPage from "@/pages/payroll/PayrollDashboardPage";
 import PayslipViewerPage from "@/pages/payroll/PayslipViewerPage";
+import PayslipHistoryPage from "@/pages/payroll/PayslipHistoryPage";
 import AttendancePage from "@/pages/AttendancePage";
 import ReportsPage from "@/pages/ReportsPage";
 import NotificationsPage from "@/pages/NotificationsPage";
@@ -75,6 +76,7 @@ const App = () => (
               <Route path="leave/history" element={<RoleRoute allowedRoles={['Employee']}><LeaveHistoryPage /></RoleRoute>} />
               <Route path="leave/approvals" element={<RoleRoute allowedRoles={['Manager']}><LeaveApprovalPage /></RoleRoute>} />
               <Route path="payroll" element={<RoleRoute allowedRoles={['Manager']}><PayrollDashboardPage /></RoleRoute>} />
+              <Route path="payroll/history" element={<RoleRoute allowedRoles={['Employee']}><PayslipHistoryPage /></RoleRoute>} />
               <Route path="payroll/payslip/:id" element={<RoleRoute allowedRoles={['Employee', 'Manager']}><PayslipViewerPage /></RoleRoute>} />
               <Route path="attendance" element={<AttendancePage />} />
               <Route path="reports" element={<RoleRoute allowedRoles={['Manager']}><ReportsPage /></RoleRoute>} />
